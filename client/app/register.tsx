@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { router } from "expo-router";
-import authStyles from "./src/styles/AuthStyles";
+import authStyles from "../src/styles/AuthStyles";
 
 type FormData = {
   name: string;
