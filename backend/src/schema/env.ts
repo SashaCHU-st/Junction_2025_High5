@@ -30,10 +30,11 @@ const env = {
     NODE_ENV: process.env.NODE_ENV || 'development',
     PORT: requireEnv('PORT'),
     // DB_URL: dbUrlResult.data,
-    DB_URL: requireEnv('DB_URL'),
+    DB_URL: process.env.DB_URL, // Optional for now - using in-memory storage
 } as const;
 
 export const PORT = env.PORT;
 export const NODE_ENV = env.NODE_ENV;
+export const DB_URL = env.DB_URL;
 
 export const getEnvConfig = () => (env.DB_URL);
