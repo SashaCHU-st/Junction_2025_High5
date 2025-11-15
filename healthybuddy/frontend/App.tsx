@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform, Linking } from 'react-native';
+import * as LinkingExpo from 'expo-linking';
 import HomeScreen from './screens/HomeScreen';
 import VoiceChatScreen from './screens/VoiceChatScreen';
 import FriendMatchScreen from './screens/FriendMatchScreen';
@@ -14,6 +15,8 @@ import { FriendMatch } from './types';
 
 type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions' | 'activityDetail' | 'eventNearby' | 'joinedEvents' | 'offerJoin';
 
+// type Screen = 'home' | 'voiceChat' | 'friendMatch';
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [friendMatch, setFriendMatch] = useState<FriendMatch | null>(null);
@@ -22,6 +25,34 @@ export default function App() {
   const [nearbyFor, setNearbyFor] = useState<string | null>(null);
   const [pendingOffer, setPendingOffer] = useState<{id: string; title: string; organizer: string; activity?: string} | null>(null);
   const [joinedEvents, setJoinedEvents] = useState<Array<{id: string; title: string; activity?: string; joinedAt: string;}>>([]);
+
+  useEffect(() => {
+    // Handle deep links when app is opened via "carebuddy://" URL
+    const handleDeepLink = (event: { url: string }) => {
+      const { path, queryParams } = LinkingExpo.parse(event.url);
+      console.log('Deep link received:', path, queryParams);
+      
+      if (path === 'home' || path === '') {
+        setCurrentScreen('home');
+      } else if (path === 'voiceChat') {
+        setCurrentScreen('voiceChat');
+      }
+    };
+
+    // Get initial URL if app was opened via deep link
+    LinkingExpo.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+
+    // Listen for deep links while app is running
+    const subscription = LinkingExpo.addEventListener('url', handleDeepLink);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   const handleStartVoiceGreeting = () => {
     setCurrentScreen('voiceChat');
@@ -84,7 +115,7 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar style="auto" />
 
       {currentScreen === 'home' && (
@@ -207,7 +238,7 @@ export default function App() {
           onGoBack={handleGoBack}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
