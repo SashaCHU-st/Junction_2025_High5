@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Platform } from 'react-native';
 import { voiceService } from '../services/voiceService';
 import { matchVoiceOption, VoiceOption } from '../utils/voiceOptionMatcher';
 
@@ -175,8 +175,10 @@ export default function EventNearbyScreen({ forActivity, onChoose, onGoBack }: E
         <TouchableOpacity onPress={() => handleButtonPress('cancel')} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerText}>Events Near You</Text>
-        <Text style={styles.subHeader}>Suggestions for: {forActivity}</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerText}>Events Near You</Text>
+          <Text style={styles.subHeader}>Suggestions for: {forActivity}</Text>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -215,32 +217,119 @@ export default function EventNearbyScreen({ forActivity, onChoose, onGoBack }: E
   );
 }
 
+const isWeb = Platform.OS === 'web';
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F9FF' },
-  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' },
-  backButton: { position: 'absolute', left: 16, top: 60, padding: 8 },
-  backButtonText: { fontSize: 18, color: '#2563EB', fontWeight: 'bold' },
-  headerText: { fontSize: 24, fontWeight: 'bold', color: '#1E293B' },
-  subHeader: { fontSize: 14, color: '#64748B', marginTop: 6 },
-  content: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F9FF',
+    ...(isWeb && {
+      maxWidth: 700,
+      alignSelf: 'center',
+      width: '100%',
+    }),
+  },
+  header: {
+    paddingTop: Platform.OS === 'ios' ? 100 : isWeb ? 16 : 60,
+    paddingHorizontal: isWeb ? 16 : 20,
+    paddingBottom: isWeb ? 10 : 12,
+  },
+  backButton: {
+    padding: isWeb ? 6 : 8,
+    marginBottom: isWeb ? 12 : 16,
+  },
+  headerContent: {
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontSize: isWeb ? 16 : 18,
+    color: '#2563EB',
+    fontWeight: 'bold',
+  },
+  headerText: {
+    fontSize: isWeb ? 22 : 24,
+    fontWeight: 'bold',
+    color: '#1E293B',
+  },
+  subHeader: {
+    fontSize: isWeb ? 13 : 14,
+    color: '#64748B',
+    marginTop: 6,
+  },
+  content: {
+    flex: 1,
+  },
   listeningText: {
-    fontSize: 16,
+    fontSize: isWeb ? 14 : 16,
     color: '#10B981',
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: isWeb ? 12 : 16,
     textAlign: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingHorizontal: isWeb ? 16 : 20,
+    paddingTop: isWeb ? 8 : 10,
   },
-  list: { padding: 20 },
-  eventCard: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12, marginBottom: 12 },
-  eventNumber: { fontSize: 14, color: '#2563EB', fontWeight: 'bold', marginBottom: 4 },
-  eventTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B' },
-  eventDistance: { fontSize: 14, color: '#64748B', marginVertical: 6 },
-  eventOrganizer: { fontSize: 14, color: '#64748B', marginBottom: 8 },
-  joinButton: { backgroundColor: '#2563EB', paddingVertical: 10, borderRadius: 10, alignSelf: 'flex-start' },
-  joinText: { color: '#FFFFFF', fontWeight: 'bold', paddingHorizontal: 12 },
-  footer: { padding: 20, alignItems: 'center' },
-  cancelButton: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#94A3B8', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
-  cancelText: { color: '#334155', fontWeight: 'bold' },
+  list: {
+    padding: isWeb ? 16 : 20,
+    ...(isWeb && {
+      maxWidth: 650,
+      alignSelf: 'center',
+      width: '100%',
+    }),
+  },
+  eventCard: {
+    backgroundColor: '#FFFFFF',
+    padding: isWeb ? 14 : 16,
+    borderRadius: 12,
+    marginBottom: isWeb ? 10 : 12,
+  },
+  eventNumber: {
+    fontSize: isWeb ? 13 : 14,
+    color: '#2563EB',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  eventTitle: {
+    fontSize: isWeb ? 16 : 18,
+    fontWeight: 'bold',
+    color: '#1E293B',
+  },
+  eventDistance: {
+    fontSize: isWeb ? 13 : 14,
+    color: '#64748B',
+    marginVertical: isWeb ? 4 : 6,
+  },
+  eventOrganizer: {
+    fontSize: isWeb ? 13 : 14,
+    color: '#64748B',
+    marginBottom: isWeb ? 6 : 8,
+  },
+  joinButton: {
+    backgroundColor: '#2563EB',
+    paddingVertical: isWeb ? 8 : 10,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  joinText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    paddingHorizontal: isWeb ? 10 : 12,
+    fontSize: isWeb ? 14 : 16,
+  },
+  footer: {
+    padding: isWeb ? 16 : 20,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#94A3B8',
+    paddingVertical: isWeb ? 8 : 10,
+    paddingHorizontal: isWeb ? 18 : 20,
+    borderRadius: 10,
+  },
+  cancelText: {
+    color: '#334155',
+    fontWeight: 'bold',
+    fontSize: isWeb ? 15 : 16,
+  },
 });

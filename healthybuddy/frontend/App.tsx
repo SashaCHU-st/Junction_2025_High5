@@ -6,7 +6,6 @@ import HomeScreen from './screens/HomeScreen';
 import VoiceChatScreen from './screens/VoiceChatScreen';
 import FriendMatchScreen from './screens/FriendMatchScreen';
 import EventMatchingScreen from './screens/EventMatchingScreen';
-import ActivityOptionsScreen from './screens/ActivityOptionsScreen';
 import ActivityDetailScreen from './screens/ActivityDetailScreen';
 import EventNearbyScreen from './screens/EventNearbyScreen';
 import TodayCalendarScreen from './screens/TodayCalendarScreen';
@@ -14,7 +13,7 @@ import OfferJoinScreen from './screens/OfferJoinScreen';
 import WeatherAlertComponent from './components/WeatherAlert';
 import { FriendMatch } from './types';
 
-type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions' | 'activityDetail' | 'eventNearby' | 'joinedEvents' | 'offerJoin';
+type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityDetail' | 'eventNearby' | 'joinedEvents' | 'offerJoin';
 
 // type Screen = 'home' | 'voiceChat' | 'friendMatch';
 
@@ -76,12 +75,15 @@ export default function App() {
     setCurrentScreen('joinedEvents');
   };
 
-  const handleOpenActivityOptions = (activityType: 'physical' | 'mental') => {
-    setSelectedActivityType(activityType);
-    setCurrentScreen('activityOptions');
-  };
 
-  const handleOpenActivityDetail = (activityType: 'physical' | 'mental', subChoice: string) => {
+  const handleOpenActivityDetail = async (activityType: 'physical' | 'mental', subChoice: string) => {
+    // Stop any ongoing TTS/recognition before navigating
+    const { voiceService } = await import('./services/voiceService');
+    await voiceService.stopSpeechRecognition();
+    // Wait a bit to ensure cleanup is complete
+    await new Promise(resolve => setTimeout(resolve, 200));
+    await voiceService.stopSpeaking();
+    
     setSelectedActivityType(activityType);
     setSelectedActivitySub(subChoice);
     setCurrentScreen('activityDetail');
@@ -95,7 +97,7 @@ export default function App() {
     }
 
     if (choice === 'physicalActivities') {
-      // App is for older people — skip age question and go straight to detail
+      // Go directly to detail screen (skip older people/all ages question)
       handleOpenActivityDetail('physical', 'olderPeople');
       return;
     }
@@ -120,6 +122,25 @@ export default function App() {
     setCurrentScreen('home');
   };
 
+  const handleOpenFriendMatch = async () => {
+    // Stop any TTS from HomeScreen before navigating
+    const { voiceService } = await import('./services/voiceService');
+    await voiceService.stopSpeaking();
+    
+    // Create a sample friend match for demonstration
+    const sampleMatch: FriendMatch = {
+      candidateId: 'sample-1',
+      candidateName: 'Maria',
+      candidateAge: 68,
+      matchScore: 87,
+      commonInterests: ['walking', 'gardening', 'reading', 'cooking'],
+      reason: 'You both enjoy outdoor activities and have similar daily routines. Maria also loves morning walks and has been looking for a walking partner.',
+    };
+    
+    setFriendMatch(sampleMatch);
+    setCurrentScreen('friendMatch');
+  };
+
   const handleGoBack = () => {
     setCurrentScreen('home');
   };
@@ -134,6 +155,7 @@ export default function App() {
           onStartVoiceGreeting={handleStartVoiceGreeting}
           onEventMatching={handleOpenEventMatching}
           onOpenCalendar={handleOpenCalendar}
+          onOpenFriendMatch={handleOpenFriendMatch}
         />
       )}
 
@@ -151,16 +173,6 @@ export default function App() {
         />
       )}
 
-      {currentScreen === 'activityOptions' && selectedActivityType && (
-        <ActivityOptionsScreen
-          activityType={selectedActivityType}
-          onChoose={(detailChoice: string) => {
-            // Open deeper detail questions (e.g., walk vs sport-with-equipment)
-            handleOpenActivityDetail(selectedActivityType, detailChoice);
-          }}
-          onGoBack={handleGoBack}
-        />
-      )}
 
       {currentScreen === 'activityDetail' && selectedActivityType && selectedActivitySub && (
         <ActivityDetailScreen

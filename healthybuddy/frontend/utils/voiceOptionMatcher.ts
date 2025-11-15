@@ -19,26 +19,38 @@ export function matchVoiceOption(
   if (!transcript) return null;
 
   const lowerTranscript = transcript.toLowerCase().trim();
+  console.log('Matching transcript:', lowerTranscript, 'against options:', options);
 
   // Try exact match first
   for (const option of options) {
     for (const keyword of option.keywords) {
-      if (lowerTranscript === keyword.toLowerCase()) {
+      const lowerKeyword = keyword.toLowerCase();
+      if (lowerTranscript === lowerKeyword) {
+        console.log('Exact match found:', lowerKeyword, '->', option.value);
         return option.value;
       }
     }
   }
 
-  // Try partial match (contains)
-  for (const option of options) {
-    for (const keyword of option.keywords) {
-      if (lowerTranscript.includes(keyword.toLowerCase()) || 
-          keyword.toLowerCase().includes(lowerTranscript)) {
+  // Try partial match (contains) - prioritize longer matches
+  // Sort options by keyword length (longest first) to match "physical activities" before "physical"
+  const sortedOptions = [...options].map(opt => ({
+    ...opt,
+    sortedKeywords: [...opt.keywords].sort((a, b) => b.length - a.length)
+  }));
+
+  for (const option of sortedOptions) {
+    for (const keyword of option.sortedKeywords) {
+      const lowerKeyword = keyword.toLowerCase();
+      // Check if transcript contains the keyword or keyword contains transcript
+      if (lowerTranscript.includes(lowerKeyword) || lowerKeyword.includes(lowerTranscript)) {
+        console.log('Partial match found:', lowerKeyword, '->', option.value);
         return option.value;
       }
     }
   }
 
+  console.log('No match found for:', lowerTranscript);
   return null;
 }
 

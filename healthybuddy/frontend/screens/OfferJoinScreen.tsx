@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { voiceService } from '../services/voiceService';
 import { matchVoiceOption, VoiceOption } from '../utils/voiceOptionMatcher';
 
@@ -100,14 +100,18 @@ export default function OfferJoinScreen({ id, title, organizer, activity, onConf
     // Mark as cancelled to prevent retry logic
     isCancelledRef.current = true;
     
-    // Stop any ongoing recognition
+    // Stop any ongoing recognition first
     if (isListening) {
       await voiceService.stopSpeechRecognition();
       setIsListening(false);
       recognitionRef.current = null;
     }
-    // Stop TTS
+    
+    // Stop TTS immediately and wait for it to complete
     await voiceService.stopSpeaking();
+    
+    // Small delay to ensure TTS is fully stopped
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     if (action === 'confirm') {
       onConfirm();
@@ -142,18 +146,84 @@ export default function OfferJoinScreen({ id, title, organizer, activity, onConf
   );
 }
 
+const isWeb = Platform.OS === 'web';
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F9FF' },
-  header: { paddingTop: 80, alignItems: 'center' },
-  headerText: { fontSize: 24, fontWeight: 'bold', color: '#1E293B' },
-  content: { padding: 24, alignItems: 'center' },
-  offerText: { fontSize: 18, color: '#475569' },
-  titleText: { fontSize: 20, fontWeight: 'bold', marginVertical: 8, color: '#1E293B' },
-  askText: { fontSize: 18, color: '#475569', marginBottom: 16 },
-  button: { paddingVertical: 14, paddingHorizontal: 32, borderRadius: 12, marginBottom: 12, width: '70%', alignItems: 'center' },
-  confirm: { backgroundColor: '#10B981' },
-  decline: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#94A3B8' },
-  buttonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
-  declineText: { color: '#334155' },
-  listeningText: { fontSize: 16, color: '#10B981', fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F9FF',
+    ...(isWeb && {
+      maxWidth: 700,
+      alignSelf: 'center',
+      width: '100%',
+    }),
+  },
+  header: {
+    paddingTop: Platform.OS === 'ios' ? 100 : isWeb ? 16 : 80,
+    alignItems: 'center',
+    paddingHorizontal: isWeb ? 16 : 20,
+  },
+  headerText: {
+    fontSize: isWeb ? 22 : 24,
+    fontWeight: 'bold',
+    color: '#1E293B',
+  },
+  content: {
+    padding: isWeb ? 20 : 24,
+    alignItems: 'center',
+    ...(isWeb && {
+      maxWidth: 600,
+      alignSelf: 'center',
+      width: '100%',
+    }),
+  },
+  offerText: {
+    fontSize: isWeb ? 16 : 18,
+    color: '#475569',
+  },
+  titleText: {
+    fontSize: isWeb ? 18 : 20,
+    fontWeight: 'bold',
+    marginVertical: isWeb ? 6 : 8,
+    color: '#1E293B',
+  },
+  askText: {
+    fontSize: isWeb ? 16 : 18,
+    color: '#475569',
+    marginBottom: isWeb ? 12 : 16,
+  },
+  button: {
+    paddingVertical: isWeb ? 12 : 14,
+    paddingHorizontal: isWeb ? 28 : 32,
+    borderRadius: 12,
+    marginBottom: isWeb ? 10 : 12,
+    width: isWeb ? '60%' : '70%',
+    alignItems: 'center',
+    ...(isWeb && {
+      maxWidth: 400,
+    }),
+  },
+  confirm: {
+    backgroundColor: '#10B981',
+  },
+  decline: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#94A3B8',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: isWeb ? 15 : 16,
+  },
+  declineText: {
+    color: '#334155',
+  },
+  listeningText: {
+    fontSize: isWeb ? 14 : 16,
+    color: '#10B981',
+    fontWeight: 'bold',
+    marginBottom: isWeb ? 12 : 16,
+    textAlign: 'center',
+  },
 });
