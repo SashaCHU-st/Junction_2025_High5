@@ -94,7 +94,9 @@ export default function TodayCalendarScreen({ events, onGoBack }: Props) {
         <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerText}>My Calendar — {today.toLocaleString(undefined, { month: 'long' })} {year}</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerText}>My Calendar — {today.toLocaleString(undefined, { month: 'long' })} {year}</Text>
+        </View>
       </View>
 
       <View style={styles.calendarContainer}>
@@ -148,25 +150,124 @@ export default function TodayCalendarScreen({ events, onGoBack }: Props) {
   );
 }
 
+const isWeb = Platform.OS === 'web';
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F9FF' },
-  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' },
-  backButton: { position: 'absolute', left: 16, top: 60, padding: 8 },
-  backButtonText: { fontSize: 18, color: '#2563EB', fontWeight: 'bold' },
-  headerText: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', textAlign: 'center' },
-  calendarContainer: { padding: 12, paddingHorizontal: 18 },
-  weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  dayName: { width: `${100/7}%`, textAlign: 'center', color: '#64748B', fontWeight: '600' },
-  dayCell: { width: `${100/7}%`, alignItems: 'center', paddingVertical: 8, borderRadius: 8 },
-  dayCellEmpty: { width: `${100/7}%`, paddingVertical: 8 },
-  dayNumber: { fontSize: 14, color: '#1E293B' },
-  dayNumberMarked: { color: '#10B981', fontWeight: '700' },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981', marginTop: 4 },
-  dayCellSelected: { backgroundColor: '#E6F9F0' },
-  eventsList: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B', marginBottom: 8 },
-  emptyText: { fontSize: 16, color: '#64748B' },
-  eventRow: { backgroundColor: '#FFFFFF', padding: 12, borderRadius: 12, marginBottom: 10 },
-  eventTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E293B' },
-  eventMeta: { fontSize: 13, color: '#64748B', marginTop: 4 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F9FF',
+    ...(isWeb && {
+      maxWidth: 700,
+      alignSelf: 'center',
+      width: '100%',
+    }),
+  },
+  header: {
+    paddingTop: Platform.OS === 'ios' ? 100 : isWeb ? 16 : 60,
+    paddingHorizontal: isWeb ? 16 : 20,
+    paddingBottom: isWeb ? 10 : 12,
+  },
+  backButton: {
+    padding: isWeb ? 6 : 8,
+    marginBottom: isWeb ? 12 : 16,
+  },
+  headerContent: {
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontSize: isWeb ? 16 : 18,
+    color: '#2563EB',
+    fontWeight: 'bold',
+  },
+  headerText: {
+    fontSize: isWeb ? 18 : 20,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    textAlign: 'center',
+  },
+  calendarContainer: {
+    padding: isWeb ? 10 : 12,
+    paddingHorizontal: isWeb ? 14 : 18,
+    ...(isWeb && {
+      maxWidth: 650,
+      alignSelf: 'center',
+      width: '100%',
+    }),
+  },
+  weekRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: isWeb ? 4 : 6,
+  },
+  dayName: {
+    width: `${100/7}%`,
+    textAlign: 'center',
+    color: '#64748B',
+    fontWeight: '600',
+    fontSize: isWeb ? 12 : 14,
+  },
+  dayCell: {
+    width: `${100/7}%`,
+    alignItems: 'center',
+    paddingVertical: isWeb ? 6 : 8,
+    borderRadius: 8,
+  },
+  dayCellEmpty: {
+    width: `${100/7}%`,
+    paddingVertical: isWeb ? 6 : 8,
+  },
+  dayNumber: {
+    fontSize: isWeb ? 13 : 14,
+    color: '#1E293B',
+  },
+  dayNumberMarked: {
+    color: '#10B981',
+    fontWeight: '700',
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+    marginTop: 4,
+  },
+  dayCellSelected: {
+    backgroundColor: '#E6F9F0',
+  },
+  eventsList: {
+    flex: 1,
+    paddingHorizontal: isWeb ? 14 : 18,
+    paddingTop: isWeb ? 6 : 8,
+    ...(isWeb && {
+      maxWidth: 650,
+      alignSelf: 'center',
+      width: '100%',
+    }),
+  },
+  sectionTitle: {
+    fontSize: isWeb ? 16 : 18,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginBottom: isWeb ? 6 : 8,
+  },
+  emptyText: {
+    fontSize: isWeb ? 14 : 16,
+    color: '#64748B',
+  },
+  eventRow: {
+    backgroundColor: '#FFFFFF',
+    padding: isWeb ? 10 : 12,
+    borderRadius: 12,
+    marginBottom: isWeb ? 8 : 10,
+  },
+  eventTitle: {
+    fontSize: isWeb ? 15 : 16,
+    fontWeight: 'bold',
+    color: '#1E293B',
+  },
+  eventMeta: {
+    fontSize: isWeb ? 12 : 13,
+    color: '#64748B',
+    marginTop: 4,
+  },
 });
