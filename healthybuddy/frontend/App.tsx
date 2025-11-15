@@ -11,6 +11,7 @@ import ActivityDetailScreen from './screens/ActivityDetailScreen';
 import EventNearbyScreen from './screens/EventNearbyScreen';
 import TodayCalendarScreen from './screens/TodayCalendarScreen';
 import OfferJoinScreen from './screens/OfferJoinScreen';
+import WeatherAlertComponent from './components/WeatherAlert';
 import { FriendMatch } from './types';
 
 type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions' | 'activityDetail' | 'eventNearby' | 'joinedEvents' | 'offerJoin';
@@ -126,6 +127,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
+      <WeatherAlertComponent />
 
       {currentScreen === 'home' && (
         <HomeScreen
