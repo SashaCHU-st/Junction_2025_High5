@@ -8,17 +8,25 @@
     "build": "tsc",
     "start": "node dist/index.js"
   },
-  "keywords": ["healthybuddy", "voice", "elderly", "wellness"],
+  "keywords": [
+    "healthybuddy",
+    "voice",
+    "elderly",
+    "wellness"
+  ],
   "author": "Team Hive5",
   "license": "MIT",
   "dependencies": {
     "@fastify/cors": "^10.0.1",
+    "@huggingface/inference": "^4.13.3",
+    "dotenv": "^17.2.3",
     "fastify": "^5.1.0",
+    "openai": "^6.9.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.8.6",
-    "tsx": "^4.19.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.6.3"
   }
 }
