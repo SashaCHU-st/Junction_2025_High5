@@ -867,12 +867,13 @@ export class VoiceService {
   /**
    * Start real-time speech recognition (no rate limit, uses device built-in recognition)
    * Returns transcript when recognition ends
+   * @param timeoutMs Maximum time to wait for speech (default: 10 seconds)
    */
-  async startSpeechRecognition(): Promise<string | null> {
+  async startSpeechRecognition(timeoutMs: number = 10000): Promise<string | null> {
     if (Platform.OS === 'web') {
-      return this.startWebSpeechRecognition();
+      return this.startWebSpeechRecognition(timeoutMs);
     }
-    return this.startMobileSpeechRecognition();
+    return this.startMobileSpeechRecognition(timeoutMs);
   }
 
   /**
@@ -892,26 +893,155 @@ export class VoiceService {
 
   /**
    * Start Web Speech Recognition (web only)
-   * Note: This is not used for continuous recording - use startRecording() instead
-   * Web Speech Recognition automatically stops when speech ends, which interrupts user
+   * Waits for speech and returns transcript
    */
-  private async startWebSpeechRecognition(): Promise<string | null> {
-    // Don't use Web Speech Recognition for continuous recording
-    // It automatically stops when speech ends, which interrupts user
-    // Return null to use audio recording + backend Whisper instead
-    return null;
+  private async startWebSpeechRecognition(timeoutMs: number = 10000): Promise<string | null> {
+    return new Promise((resolve) => {
+      try {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          console.warn('Web Speech Recognition not available');
+          resolve(null);
+          return;
+        }
+
+        if (this.isRecognizing) {
+          this.stopRecognition();
+        }
+
+        this.isRecognizing = true;
+        const recognition = new SpeechRecognition();
+        this.recognition = recognition;
+
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        let finalTranscript = '';
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        const cleanup = () => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+          this.isRecognizing = false;
+          this.recognition = null;
+        };
+
+        recognition.onresult = (event: any) => {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            }
+          }
+        };
+
+        recognition.onend = () => {
+          cleanup();
+          if (finalTranscript.trim()) {
+            resolve(finalTranscript.trim());
+          } else {
+            resolve(null);
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          const errorType = event.error;
+          // 'aborted' and 'no-speech' are expected when stopping or no input received
+          if (errorType !== 'aborted' && errorType !== 'no-speech') {
+            console.error('Web Speech Recognition error:', errorType);
+          }
+          cleanup();
+          resolve(null);
+        };
+
+        // Set timeout
+        timeoutId = setTimeout(() => {
+          recognition.stop();
+        }, timeoutMs);
+
+        recognition.start();
+      } catch (error) {
+        console.error('Failed to start Web Speech Recognition:', error);
+        this.isRecognizing = false;
+        this.recognition = null;
+        resolve(null);
+      }
+    });
   }
 
   /**
    * Start Mobile Speech Recognition (iOS/Android)
-   * Note: This is not used for continuous recording - use startRecording() instead
-   * This method returns immediately and doesn't wait for speech end
+   * Waits for speech and returns transcript
    */
-  private async startMobileSpeechRecognition(): Promise<string | null> {
-    // Don't use device recognition for continuous recording
-    // It automatically stops when speech ends, which interrupts user
-    // Return null to use audio recording + backend Whisper instead
-    return null;
+  private async startMobileSpeechRecognition(timeoutMs: number = 10000): Promise<string | null> {
+    return new Promise((resolve) => {
+      try {
+        Voice.isAvailable()
+          .then((isAvailable: number) => {
+            if (isAvailable !== 1) {
+              console.warn('Voice recognition not available on this device');
+              resolve(null);
+              return;
+            }
+
+            let finalTranscript = '';
+            let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+            const cleanup = () => {
+              if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+              }
+              Voice.removeAllListeners();
+            };
+
+            Voice.onSpeechResults = (e: any) => {
+              const results = e.value || [];
+              if (results.length > 0) {
+                finalTranscript = results[0];
+              }
+            };
+
+            Voice.onSpeechEnd = () => {
+              cleanup();
+              resolve(finalTranscript || null);
+            };
+
+            Voice.onSpeechError = (e: any) => {
+              console.error('Speech recognition error:', e.error);
+              cleanup();
+              resolve(null);
+            };
+
+            // Set timeout
+            timeoutId = setTimeout(() => {
+              Voice.stop();
+              cleanup();
+              resolve(finalTranscript || null);
+            }, timeoutMs);
+
+            Voice.start('en-US')
+              .then(() => {
+                console.log('Voice recognition started');
+              })
+              .catch((error: any) => {
+                console.error('Failed to start voice recognition:', error);
+                cleanup();
+                resolve(null);
+              });
+          })
+          .catch((error: any) => {
+            console.error('Failed to check voice availability:', error);
+            resolve(null);
+          });
+      } catch (error) {
+        console.error('Failed to start mobile speech recognition:', error);
+        resolve(null);
+      }
+    });
   }
 
   /**

@@ -100,8 +100,8 @@ export default function App() {
     }
 
     if (choice === 'mentalActivities') {
-      // Open follow-up options for mental activities
-      handleOpenActivityOptions('mental');
+      // Mental activities go directly to detail screen (no options screen needed)
+      handleOpenActivityDetail('mental', 'mental');
       return;
     }
 
