@@ -4,9 +4,10 @@ import { api } from '../services/api';
 
 interface HomeScreenProps {
   onStartVoiceGreeting: () => void;
+  onEventMatching?: () => void;
 }
 
-export default function HomeScreen({ onStartVoiceGreeting }: HomeScreenProps) {
+export default function HomeScreen({ onStartVoiceGreeting, onEventMatching }: HomeScreenProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
@@ -32,6 +33,14 @@ export default function HomeScreen({ onStartVoiceGreeting }: HomeScreenProps) {
         <Text style={styles.description}>
           Connect with friends through voice conversations
         </Text>
+
+        <TouchableOpacity
+          style={[styles.eventButton, !isConnected && styles.buttonDisabled]}
+          onPress={() => (onEventMatching ? onEventMatching() : console.log('Event Matching pressed'))}
+          disabled={!isConnected}
+        >
+          <Text style={styles.eventButtonText}>Event Matching</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.button, !isConnected && styles.buttonDisabled]}
@@ -120,6 +129,19 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  eventButton: {
+    backgroundColor: '#10B981',
+    paddingVertical: 18,
+    paddingHorizontal: 40,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  eventButtonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
   },

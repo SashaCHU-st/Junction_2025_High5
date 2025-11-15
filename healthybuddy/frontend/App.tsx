@@ -4,16 +4,45 @@ import { SafeAreaView, StyleSheet } from 'react-native';
 import HomeScreen from './screens/HomeScreen';
 import VoiceChatScreen from './screens/VoiceChatScreen';
 import FriendMatchScreen from './screens/FriendMatchScreen';
+import EventMatchingScreen from './screens/EventMatchingScreen';
+import ActivityOptionsScreen from './screens/ActivityOptionsScreen';
 import { FriendMatch } from './types';
 
-type Screen = 'home' | 'voiceChat' | 'friendMatch';
+type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [friendMatch, setFriendMatch] = useState<FriendMatch | null>(null);
+  const [selectedActivityType, setSelectedActivityType] = useState<'physical' | 'mental' | null>(null);
 
   const handleStartVoiceGreeting = () => {
     setCurrentScreen('voiceChat');
+  };
+
+  const handleOpenEventMatching = () => {
+    setCurrentScreen('eventMatching');
+  };
+
+  const handleOpenActivityOptions = (activityType: 'physical' | 'mental') => {
+    setSelectedActivityType(activityType);
+    setCurrentScreen('activityOptions');
+  };
+
+  const handleEventChoice = (choice: string) => {
+    // Simple routing for choices; extend as needed
+    if (choice === 'startVoice') {
+      setCurrentScreen('voiceChat');
+      return;
+    }
+
+    if (choice === 'physicalActivities' || choice === 'mentalActivities') {
+      // Open follow-up options for the selected activity type
+      handleOpenActivityOptions(choice === 'physicalActivities' ? 'physical' : 'mental');
+      return;
+    }
+
+    // default: go back home
+    setCurrentScreen('home');
   };
 
   const handleFriendMatchFound = (match: FriendMatch) => {
@@ -35,12 +64,34 @@ export default function App() {
       <StatusBar style="auto" />
 
       {currentScreen === 'home' && (
-        <HomeScreen onStartVoiceGreeting={handleStartVoiceGreeting} />
+        <HomeScreen
+          onStartVoiceGreeting={handleStartVoiceGreeting}
+          onEventMatching={handleOpenEventMatching}
+        />
       )}
 
       {currentScreen === 'voiceChat' && (
         <VoiceChatScreen
           onFriendMatchFound={handleFriendMatchFound}
+          onGoBack={handleGoBack}
+        />
+      )}
+
+      {currentScreen === 'eventMatching' && (
+        <EventMatchingScreen
+          onChoose={(choice: string) => handleEventChoice(choice)}
+          onGoBack={handleGoBack}
+        />
+      )}
+
+      {currentScreen === 'activityOptions' && selectedActivityType && (
+        <ActivityOptionsScreen
+          activityType={selectedActivityType}
+          onChoose={(detailChoice: string) => {
+            console.log('Activity option chosen:', selectedActivityType, detailChoice);
+            // TODO: implement matching/flow based on selection
+            setCurrentScreen('home');
+          }}
           onGoBack={handleGoBack}
         />
       )}
