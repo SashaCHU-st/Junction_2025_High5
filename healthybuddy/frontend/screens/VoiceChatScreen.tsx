@@ -30,10 +30,13 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
   const [conversation, setConversation] = useState<Array<{ role: 'system' | 'user'; text: string }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
     startConversation();
   }, []);
+
+  // Auto-listen removed - user must click button to record
 
   const startConversation = async () => {
     const greeting = "Good morning! How are you doing today? Please tell me about your day and any activities you've done.";
@@ -45,8 +48,23 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
 
   const speakText = async (text: string) => {
     setIsSpeaking(true);
-    await voiceService.speak(text);
-    setIsSpeaking(false);
+    
+    try {
+      await voiceService.speak(text);
+    } catch (error) {
+      console.error('Error speaking:', error);
+    } finally {
+      setIsSpeaking(false);
+    }
+  };
+
+  const stopSpeaking = async () => {
+    try {
+      await voiceService.stopSpeaking();
+      setIsSpeaking(false);
+    } catch (error) {
+      console.error('Error stopping speech:', error);
+    }
   };
 
   const handleUserResponse = async () => {
@@ -101,6 +119,109 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
     }
   };
 
+  const handleStartRecording = async () => {
+    try {
+      // If AI is speaking, interrupt it immediately
+      if (isSpeaking) {
+        console.log('Interrupting AI speech...');
+        await stopSpeaking();
+        // Minimal delay for speech to stop
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      
+      // Set recording state optimistically for UI feedback
+      setIsRecording(true);
+      
+      // Start recording
+      await voiceService.startRecording();
+      console.log('Recording started successfully');
+    } catch (error: any) {
+      console.error('Error starting recording:', error);
+      setIsRecording(false);
+      const errorMessage = error?.message || 'Failed to start recording. Please check microphone permissions.';
+      alert(errorMessage);
+    }
+  };
+
+  // Auto-detection removed - user controls recording manually
+
+  const handleStopRecording = async () => {
+    try {
+      setIsRecording(false);
+      
+      const audioUri = await voiceService.stopRecording();
+      
+      if (!audioUri) {
+        console.log('No audio recorded');
+        return;
+      }
+
+      console.log('Audio recorded at:', audioUri);
+      setIsProcessing(true);
+      
+      // Convert audio to base64 and send to backend
+      const audioBase64 = await voiceService.getAudioAsBase64(audioUri);
+      if (!audioBase64) {
+        alert('Failed to process audio. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      console.log('Audio converted to base64, length:', audioBase64.length);
+
+      // Process audio with backend (which will transcribe and generate response)
+      const response = await api.processAudio(
+        sessionState.userId,
+        audioBase64,
+        sessionState.conversationStep
+      );
+
+      // Show transcribed text in conversation
+      const transcript = response.transcript;
+      if (transcript && transcript.trim()) {
+        setConversation(prev => [...prev, { role: 'user' as const, text: transcript }]);
+        setUserInput(''); // Clear text input
+      }
+
+      // Update collected data
+      setSessionState(prev => ({
+        ...prev,
+        conversationStep: prev.conversationStep + 1,
+        collectedData: {
+          steps: response.extractedData.steps || prev.collectedData.steps,
+          mood: response.extractedData.mood || prev.collectedData.mood,
+          interests: [
+            ...prev.collectedData.interests,
+            ...(response.extractedData.interests || []),
+          ],
+        },
+        friendMatch: response.friendMatch,
+      }));
+
+      // Speak and show next prompt
+      setCurrentPrompt(response.nextPrompt);
+      setConversation(prev => [...prev, { role: 'system', text: response.nextPrompt }]);
+      await speakText(response.nextPrompt);
+
+      // If we have a friend match, show it
+      if (response.friendMatch) {
+        setTimeout(() => {
+          onFriendMatchFound(response.friendMatch!);
+        }, 2000);
+      }
+    } catch (error: any) {
+      console.error('Error processing audio:', error);
+      const errorMsg = error?.message?.includes('transcribe') 
+        ? 'Sorry, I had trouble understanding your voice. Please try speaking more clearly or use text input.'
+        : 'Sorry, I had trouble processing your audio. Please try again.';
+      setConversation(prev => [...prev, { role: 'system', text: errorMsg }]);
+      await speakText(errorMsg);
+    } finally {
+      setIsProcessing(false);
+      // Auto-listen will restart after speaking finishes (handled by useEffect)
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -108,7 +229,10 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerText}>Voice Conversation</Text>
-        {isSpeaking && <Text style={styles.statusText}>🔊 Speaking...</Text>}
+        <View style={styles.headerStatus}>
+          {isSpeaking && <Text style={styles.statusText}>🔊 Speaking...</Text>}
+          {isRecording && <Text style={styles.statusText}>🎤 Listening...</Text>}
+        </View>
       </View>
 
       <ScrollView style={styles.conversationContainer}>
@@ -133,12 +257,25 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
           placeholder="Type your response or speak..."
           placeholderTextColor="#94A3B8"
           multiline
-          editable={!isProcessing && !isSpeaking}
+          editable={!isProcessing && !isSpeaking && !isRecording}
         />
+        <TouchableOpacity
+          style={[
+            styles.recordButton,
+            isRecording && styles.recordButtonActive,
+            (isProcessing || isSpeaking) && styles.recordButtonDisabled
+          ]}
+          onPress={isRecording ? handleStopRecording : handleStartRecording}
+          disabled={isProcessing || isSpeaking}
+        >
+          <Text style={styles.recordButtonText}>
+            {isRecording ? '⏹️' : '🎤'}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.sendButton, (isProcessing || !userInput.trim()) && styles.sendButtonDisabled]}
           onPress={handleUserResponse}
-          disabled={isProcessing || !userInput.trim()}
+          disabled={isProcessing || !userInput.trim() || isRecording}
         >
           {isProcessing ? (
             <ActivityIndicator color="#FFFFFF" />
@@ -244,6 +381,28 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  recordButton: {
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  recordButtonActive: {
+    backgroundColor: '#EF4444',
+  },
+  recordButtonDisabled: {
+    backgroundColor: '#94A3B8',
+  },
+  recordButtonText: {
+    fontSize: 24,
+  },
+  headerStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   dataPreview: {
     backgroundColor: '#FEF3C7',

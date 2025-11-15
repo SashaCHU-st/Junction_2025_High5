@@ -47,6 +47,7 @@ export interface ProcessVoiceRequest {
 }
 
 export interface ProcessVoiceResponse {
+  transcript?: string;
   extractedData: VoiceSession['extractedData'];
   nextPrompt: string;
   friendMatch?: FriendMatch;
