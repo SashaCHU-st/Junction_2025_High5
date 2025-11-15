@@ -6,14 +6,18 @@ import VoiceChatScreen from './screens/VoiceChatScreen';
 import FriendMatchScreen from './screens/FriendMatchScreen';
 import EventMatchingScreen from './screens/EventMatchingScreen';
 import ActivityOptionsScreen from './screens/ActivityOptionsScreen';
+import ActivityDetailScreen from './screens/ActivityDetailScreen';
+import EventNearbyScreen from './screens/EventNearbyScreen';
 import { FriendMatch } from './types';
 
-type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions';
+type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions' | 'activityDetail' | 'eventNearby';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [friendMatch, setFriendMatch] = useState<FriendMatch | null>(null);
   const [selectedActivityType, setSelectedActivityType] = useState<'physical' | 'mental' | null>(null);
+  const [selectedActivitySub, setSelectedActivitySub] = useState<string | null>(null);
+  const [nearbyFor, setNearbyFor] = useState<string | null>(null);
 
   const handleStartVoiceGreeting = () => {
     setCurrentScreen('voiceChat');
@@ -26,6 +30,12 @@ export default function App() {
   const handleOpenActivityOptions = (activityType: 'physical' | 'mental') => {
     setSelectedActivityType(activityType);
     setCurrentScreen('activityOptions');
+  };
+
+  const handleOpenActivityDetail = (activityType: 'physical' | 'mental', subChoice: string) => {
+    setSelectedActivityType(activityType);
+    setSelectedActivitySub(subChoice);
+    setCurrentScreen('activityDetail');
   };
 
   const handleEventChoice = (choice: string) => {
@@ -88,8 +98,40 @@ export default function App() {
         <ActivityOptionsScreen
           activityType={selectedActivityType}
           onChoose={(detailChoice: string) => {
-            console.log('Activity option chosen:', selectedActivityType, detailChoice);
-            // TODO: implement matching/flow based on selection
+            // Open deeper detail questions (e.g., walk vs sport-with-equipment)
+            handleOpenActivityDetail(selectedActivityType, detailChoice);
+          }}
+          onGoBack={handleGoBack}
+        />
+      )}
+
+      {currentScreen === 'activityDetail' && selectedActivityType && selectedActivitySub && (
+        <ActivityDetailScreen
+          activityType={selectedActivityType}
+          activitySub={selectedActivitySub}
+          onChoose={(finalChoice: string) => {
+            // Detect nearby request which is encoded as 'nearby:<choice>'
+            if (finalChoice.startsWith('nearby:')) {
+              const choice = finalChoice.replace('nearby:', '');
+              setNearbyFor(choice);
+              setCurrentScreen('eventNearby');
+              return;
+            }
+
+            console.log('Final activity choice:', selectedActivityType, selectedActivitySub, finalChoice);
+            // TODO: replace with matching API, voice prompts, or navigation to results
+            setCurrentScreen('home');
+          }}
+          onGoBack={handleGoBack}
+        />
+      )}
+
+      {currentScreen === 'eventNearby' && nearbyFor && (
+        <EventNearbyScreen
+          forActivity={nearbyFor}
+          onChoose={(action: string) => {
+            console.log('EventNearby action:', nearbyFor, action);
+            // For now, any action returns home; extend as needed
             setCurrentScreen('home');
           }}
           onGoBack={handleGoBack}
