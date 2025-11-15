@@ -8,9 +8,10 @@ import EventMatchingScreen from './screens/EventMatchingScreen';
 import ActivityOptionsScreen from './screens/ActivityOptionsScreen';
 import ActivityDetailScreen from './screens/ActivityDetailScreen';
 import EventNearbyScreen from './screens/EventNearbyScreen';
+import TodayCalendarScreen from './screens/TodayCalendarScreen';
 import { FriendMatch } from './types';
 
-type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions' | 'activityDetail' | 'eventNearby';
+type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions' | 'activityDetail' | 'eventNearby' | 'joinedEvents';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -18,6 +19,7 @@ export default function App() {
   const [selectedActivityType, setSelectedActivityType] = useState<'physical' | 'mental' | null>(null);
   const [selectedActivitySub, setSelectedActivitySub] = useState<string | null>(null);
   const [nearbyFor, setNearbyFor] = useState<string | null>(null);
+  const [joinedEvents, setJoinedEvents] = useState<Array<{id: string; title: string; activity?: string; joinedAt: string;}>>([]);
 
   const handleStartVoiceGreeting = () => {
     setCurrentScreen('voiceChat');
@@ -25,6 +27,10 @@ export default function App() {
 
   const handleOpenEventMatching = () => {
     setCurrentScreen('eventMatching');
+  };
+
+  const handleOpenCalendar = () => {
+    setCurrentScreen('joinedEvents');
   };
 
   const handleOpenActivityOptions = (activityType: 'physical' | 'mental') => {
@@ -45,9 +51,15 @@ export default function App() {
       return;
     }
 
-    if (choice === 'physicalActivities' || choice === 'mentalActivities') {
-      // Open follow-up options for the selected activity type
-      handleOpenActivityOptions(choice === 'physicalActivities' ? 'physical' : 'mental');
+    if (choice === 'physicalActivities') {
+      // App is for older people — skip age question and go straight to detail
+      handleOpenActivityDetail('physical', 'olderPeople');
+      return;
+    }
+
+    if (choice === 'mentalActivities') {
+      // Open follow-up options for mental activities
+      handleOpenActivityOptions('mental');
       return;
     }
 
@@ -77,6 +89,7 @@ export default function App() {
         <HomeScreen
           onStartVoiceGreeting={handleStartVoiceGreeting}
           onEventMatching={handleOpenEventMatching}
+          onOpenCalendar={handleOpenCalendar}
         />
       )}
 
@@ -110,7 +123,8 @@ export default function App() {
           activityType={selectedActivityType}
           activitySub={selectedActivitySub}
           onChoose={(finalChoice: string) => {
-            // Detect nearby request which is encoded as 'nearby:<choice>'
+            // When user selects an activity detail (e.g., 'walk', 'sport', 'puzzles'),
+            // immediately show matching nearby offers by opening EventNearbyScreen.
             if (finalChoice.startsWith('nearby:')) {
               const choice = finalChoice.replace('nearby:', '');
               setNearbyFor(choice);
@@ -118,9 +132,9 @@ export default function App() {
               return;
             }
 
-            console.log('Final activity choice:', selectedActivityType, selectedActivitySub, finalChoice);
-            // TODO: replace with matching API, voice prompts, or navigation to results
-            setCurrentScreen('home');
+            // For any other final choice, show matching events for that activity
+            setNearbyFor(finalChoice);
+            setCurrentScreen('eventNearby');
           }}
           onGoBack={handleGoBack}
         />
@@ -130,10 +144,27 @@ export default function App() {
         <EventNearbyScreen
           forActivity={nearbyFor}
           onChoose={(action: string) => {
+            // Expecting format: 'join:<id>:<title>'
+            if (action.startsWith('join:')) {
+              const parts = action.split(':');
+              const id = parts[1] ?? String(Date.now());
+              const title = parts.slice(2).join(':') || `Event ${id}`;
+              const joinedAt = new Date().toISOString();
+              setJoinedEvents((prev) => [{ id, title, activity: nearbyFor, joinedAt }, ...prev]);
+              setCurrentScreen('joinedEvents');
+              return;
+            }
+
             console.log('EventNearby action:', nearbyFor, action);
-            // For now, any action returns home; extend as needed
             setCurrentScreen('home');
           }}
+          onGoBack={handleGoBack}
+        />
+      )}
+
+      {currentScreen === 'joinedEvents' && (
+        <TodayCalendarScreen
+          events={joinedEvents}
           onGoBack={handleGoBack}
         />
       )}

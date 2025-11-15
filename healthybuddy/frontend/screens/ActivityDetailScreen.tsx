@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 interface ActivityDetailScreenProps {
@@ -9,40 +9,30 @@ interface ActivityDetailScreenProps {
 }
 
 export default function ActivityDetailScreen({ activityType, activitySub, onChoose, onGoBack }: ActivityDetailScreenProps) {
-  const [selectedFinal, setSelectedFinal] = useState<string | null>(null);
-
   // For physical activity subtypes, ask what exactly they'd like to do
   const renderPhysicalOptions = () => (
     <>
-      <TouchableOpacity style={styles.optionButton} onPress={() => setSelectedFinal('walk')}>
+      <TouchableOpacity style={styles.optionButton} onPress={() => onChoose('walk')}>
         <Text style={styles.optionText}>Walk / Gentle Walk</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.optionButton} onPress={() => setSelectedFinal('sport_equipment')}>
-        <Text style={styles.optionText}>Sport (requires equipment)</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.optionButton} onPress={() => setSelectedFinal('sport_no_equipment')}>
-        <Text style={styles.optionText}>Sport (no equipment)</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.optionButton} onPress={() => setSelectedFinal('group_class')}>
-        <Text style={styles.optionText}>Group / Class</Text>
+      <TouchableOpacity style={styles.optionButton} onPress={() => onChoose('sport')}>
+        <Text style={styles.optionText}>Sport</Text>
       </TouchableOpacity>
     </>
   );
 
   const renderMentalOptions = () => (
     <>
-      <TouchableOpacity style={styles.optionButton} onPress={() => setSelectedFinal('guided_relaxation')}>
+      <TouchableOpacity style={styles.optionButton} onPress={() => onChoose('guided_relaxation')}>
         <Text style={styles.optionText}>Guided Relaxation / Mindfulness</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.optionButton} onPress={() => setSelectedFinal('puzzles')}>
+      <TouchableOpacity style={styles.optionButton} onPress={() => onChoose('puzzles')}>
         <Text style={styles.optionText}>Puzzles / Cognitive Games</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.optionButton} onPress={() => setSelectedFinal('learning')}>
+      <TouchableOpacity style={styles.optionButton} onPress={() => onChoose('learning')}>
         <Text style={styles.optionText}>Learning / Skill Practice</Text>
       </TouchableOpacity>
     </>
@@ -67,20 +57,6 @@ export default function ActivityDetailScreen({ activityType, activitySub, onChoo
         </Text>
 
         {activityType === 'physical' ? renderPhysicalOptions() : renderMentalOptions()}
-
-        {selectedFinal ? (
-          <>
-            <Text style={styles.selectionText}>Selected: {selectedFinal}</Text>
-
-            <TouchableOpacity style={[styles.actionButton]} onPress={() => onChoose(selectedFinal)}>
-              <Text style={styles.actionText}>Confirm</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.actionButton, styles.secondaryAction]} onPress={() => onChoose(`nearby:${selectedFinal}`)}>
-              <Text style={[styles.actionText, styles.secondaryActionText]}>Event Nearby</Text>
-            </TouchableOpacity>
-          </>
-        ) : null}
 
         <TouchableOpacity style={[styles.optionButton, styles.cancelButton]} onPress={onGoBack}>
           <Text style={[styles.optionText, styles.cancelText]}>Cancel</Text>

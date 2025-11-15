@@ -34,7 +34,10 @@ export default function EventNearbyScreen({ forActivity, onChoose, onGoBack }: E
           <View style={styles.eventCard}>
             <Text style={styles.eventTitle}>{item.title}</Text>
             <Text style={styles.eventDistance}>{item.distance}</Text>
-            <TouchableOpacity style={styles.joinButton} onPress={() => onChoose(`join:${item.id}`)}>
+            <TouchableOpacity
+              style={styles.joinButton}
+              onPress={() => onChoose(`join:${item.id}:${item.title}`)}
+            >
               <Text style={styles.joinText}>View / Join</Text>
             </TouchableOpacity>
           </View>

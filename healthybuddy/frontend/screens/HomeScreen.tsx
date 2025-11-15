@@ -5,9 +5,10 @@ import { api } from '../services/api';
 interface HomeScreenProps {
   onStartVoiceGreeting: () => void;
   onEventMatching?: () => void;
+  onOpenCalendar?: () => void;
 }
 
-export default function HomeScreen({ onStartVoiceGreeting, onEventMatching }: HomeScreenProps) {
+export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOpenCalendar }: HomeScreenProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
@@ -50,6 +51,13 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching }: Ho
           <Text style={styles.buttonText}>
             Start Today's Voice Greeting
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.calendarButton}
+          onPress={() => (onOpenCalendar ? onOpenCalendar() : console.log('Open Calendar'))}
+        >
+          <Text style={styles.calendarButtonText}>My Calendar</Text>
         </TouchableOpacity>
 
         {isChecking ? (
@@ -142,6 +150,21 @@ const styles = StyleSheet.create({
   eventButtonText: {
     color: '#FFFFFF',
     fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  calendarButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#2563EB',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 16,
+    marginTop: 16,
+  },
+  calendarButtonText: {
+    color: '#2563EB',
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
   },
