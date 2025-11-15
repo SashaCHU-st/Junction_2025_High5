@@ -48,6 +48,23 @@ healthybuddy/
 ```bash
 cd backend
 npm install
+```
+
+**Configure Hugging Face API:**
+1. Get your Hugging Face API key from https://huggingface.co/settings/tokens
+2. Create a `.env` file in the `backend` directory:
+```bash
+HUGGINGFACE_API_KEY=your_api_key_here
+HUGGINGFACE_LLAMA_MODEL=meta-llama/Llama-2-7b-chat-hf
+PORT=3001
+```
+
+**Note:** Some Llama models may require special access. You can use alternative models like:
+- `mistralai/Mistral-7B-Instruct-v0.1`
+- `microsoft/Phi-3-mini-4k-instruct`
+- Or any other compatible model from Hugging Face
+
+```bash
 npm run dev
 ```
 
@@ -56,6 +73,7 @@ Backend will run on **http://localhost:3001**
 **API Endpoints:**
 - `GET /health` - Health check
 - `POST /api/voice/process` - Process voice transcript and get friend matches
+- `POST /api/voice/process-audio` - Process audio file (transcribe + generate response)
 - `GET /api/users` - Get all available users (demo)
 
 ### 2. Setup Frontend
@@ -91,8 +109,10 @@ npx expo start
 ## 🎙️ Voice Features
 
 - **Text-to-Speech**: Uses Expo Speech API for voice output
-- **Speech-to-Text**: MVP uses text input as fallback (easily upgradeable to real STT)
-- **Keyword Extraction**: Simple pattern matching for:
+- **Voice Recording**: Record audio directly from the app using the microphone button
+- **Speech-to-Text**: Uses Hugging Face's Whisper model for automatic speech recognition
+- **AI-Powered Responses**: Uses Hugging Face Llama model for intelligent conversation
+- **Data Extraction**: AI-powered extraction of:
   - Health data (steps, mood)
   - Interests (walking, chatting, reading, etc.)
   - Activities (exercise, gardening, etc.)
@@ -124,10 +144,18 @@ npx expo start
 
 **Test Conversation:**
 1. Tap "Start Today's Voice Greeting"
-2. Type: "I walked 3000 steps today and I'm feeling good"
-3. Wait for system response
-4. Type: "I enjoy walking and chatting with friends"
-5. See friend match result!
+2. **Option A - Voice Input:**
+   - Tap the microphone button (🎤)
+   - Speak: "I walked 3000 steps today and I'm feeling good"
+   - Tap the stop button (⏹️) when done
+   - Wait for AI transcription and response
+3. **Option B - Text Input:**
+   - Type: "I walked 3000 steps today and I'm feeling good"
+   - Tap "Send"
+4. Wait for AI-generated response
+5. Continue conversation (voice or text)
+6. Type/Speak: "I enjoy walking and chatting with friends"
+7. See friend match result!
 
 ### Test Health Check
 ```bash
@@ -140,25 +168,29 @@ curl http://localhost:3001/health
 - Fastify (web framework)
 - TypeScript
 - Zod (validation)
+- Hugging Face Inference API (Llama for text generation, Whisper for speech-to-text)
 - In-memory data (MVP - ready for PostgreSQL)
 
 **Frontend:**
 - React Native + Expo
 - Expo Speech (TTS)
 - Expo AV (audio recording)
+- Expo File System (audio file handling)
 - TypeScript
 - Multi-platform (iOS, Android, Web)
 
 ## 📝 Next Steps for Production
 
-- [ ] Integrate real Speech-to-Text (Google Cloud Speech, OpenAI Whisper, or Azure)
+- [x] Integrate real Speech-to-Text (Hugging Face Whisper)
+- [x] Integrate AI for intelligent responses (Hugging Face Llama)
 - [ ] Add user authentication
 - [ ] Connect to database (PostgreSQL) for persistent user data
 - [ ] Implement real-time chat between matched friends
-- [ ] Add more sophisticated NLP for better intent extraction
+- [ ] Fine-tune Llama model for better elderly care conversations
 - [ ] Implement privacy controls and data encryption
 - [ ] Add health tracking integrations (Apple Health, Google Fit)
 - [ ] Deploy backend and frontend to cloud
+- [ ] Add error handling for API rate limits
 
 ## 🏆 Hackathon Notes
 

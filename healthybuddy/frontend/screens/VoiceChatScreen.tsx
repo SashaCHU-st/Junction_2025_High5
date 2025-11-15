@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { voiceService } from '../services/voiceService';
 import { api } from '../services/api';
@@ -34,6 +35,11 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
 
   useEffect(() => {
     startConversation();
+    
+    // Cleanup: stop TTS when component unmounts
+    return () => {
+      voiceService.stopSpeaking().catch(() => {});
+    };
   }, []);
 
   // Auto-listen removed - user must click button to record
@@ -42,15 +48,15 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
     const greeting = "Good morning! How are you doing today? Please tell me about your day and any activities you've done.";
     setCurrentPrompt(greeting);
     setConversation([{ role: 'system', text: greeting }]);
-    await speakText(greeting);
+    await speakText(greeting); // Use system TTS only
     setSessionState(prev => ({ ...prev, conversationStep: 1 }));
   };
 
-  const speakText = async (text: string) => {
+  const speakText = async (text: string, useOpenAI: boolean = false) => {
     setIsSpeaking(true);
     
     try {
-      await voiceService.speak(text);
+      await voiceService.speak(text, useOpenAI);
     } catch (error) {
       console.error('Error speaking:', error);
     } finally {
@@ -98,7 +104,7 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
         friendMatch: response.friendMatch,
       }));
 
-      // Speak and show next prompt
+      // Speak and show next prompt (AI response - use system TTS only)
       setCurrentPrompt(response.nextPrompt);
       setConversation(prev => [...prev, { role: 'system', text: response.nextPrompt }]);
       await speakText(response.nextPrompt);
@@ -113,7 +119,7 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
       console.error('Error processing voice:', error);
       const errorMsg = 'Sorry, I had trouble understanding. Could you try again?';
       setConversation(prev => [...prev, { role: 'system', text: errorMsg }]);
-      await speakText(errorMsg);
+      await speakText(errorMsg); // Error message - use system TTS only
     } finally {
       setIsProcessing(false);
     }
@@ -132,9 +138,10 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
       // Set recording state optimistically for UI feedback
       setIsRecording(true);
       
-      // Start recording
+      // Always use audio recording + backend Whisper
+      // Device speech recognition auto-stops when speech ends, which interrupts user
       await voiceService.startRecording();
-      console.log('Recording started successfully');
+      console.log('Recording started successfully (using backend Whisper)');
     } catch (error: any) {
       console.error('Error starting recording:', error);
       setIsRecording(false);
@@ -148,16 +155,18 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
   const handleStopRecording = async () => {
     try {
       setIsRecording(false);
+      setIsProcessing(true);
       
+      // Stop audio recording and get audio file
       const audioUri = await voiceService.stopRecording();
       
       if (!audioUri) {
         console.log('No audio recorded');
+        setIsProcessing(false);
         return;
       }
 
       console.log('Audio recorded at:', audioUri);
-      setIsProcessing(true);
       
       // Convert audio to base64 and send to backend
       const audioBase64 = await voiceService.getAudioAsBase64(audioUri);
@@ -176,39 +185,16 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
         sessionState.conversationStep
       );
 
-      // Show transcribed text in conversation
-      const transcript = response.transcript;
-      if (transcript && transcript.trim()) {
-        setConversation(prev => [...prev, { role: 'user' as const, text: transcript }]);
-        setUserInput(''); // Clear text input
+      const transcript = response.transcript || null;
+      
+      if (!transcript) {
+        alert('Failed to transcribe audio. Please try again.');
+        setIsProcessing(false);
+        return;
       }
-
-      // Update collected data
-      setSessionState(prev => ({
-        ...prev,
-        conversationStep: prev.conversationStep + 1,
-        collectedData: {
-          steps: response.extractedData.steps || prev.collectedData.steps,
-          mood: response.extractedData.mood || prev.collectedData.mood,
-          interests: [
-            ...prev.collectedData.interests,
-            ...(response.extractedData.interests || []),
-          ],
-        },
-        friendMatch: response.friendMatch,
-      }));
-
-      // Speak and show next prompt
-      setCurrentPrompt(response.nextPrompt);
-      setConversation(prev => [...prev, { role: 'system', text: response.nextPrompt }]);
-      await speakText(response.nextPrompt);
-
-      // If we have a friend match, show it
-      if (response.friendMatch) {
-        setTimeout(() => {
-          onFriendMatchFound(response.friendMatch!);
-        }, 2000);
-      }
+      
+      // Process response with transcript
+      await processTranscriptResponse(transcript, response);
     } catch (error: any) {
       console.error('Error processing audio:', error);
       const errorMsg = error?.message?.includes('transcribe') 
@@ -218,9 +204,62 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
       await speakText(errorMsg);
     } finally {
       setIsProcessing(false);
-      // Auto-listen will restart after speaking finishes (handled by useEffect)
     }
   };
+
+  const processTranscript = async (transcript: string) => {
+    try {
+      // Process transcript with backend (no audio, just text)
+      const response = await api.processVoice(
+        sessionState.userId,
+        transcript,
+        sessionState.conversationStep
+      );
+
+      await processTranscriptResponse(transcript, response);
+    } catch (error: any) {
+      console.error('Error processing transcript:', error);
+      const errorMsg = 'Sorry, I had trouble processing your message. Please try again.';
+      setConversation(prev => [...prev, { role: 'system', text: errorMsg }]);
+      await speakText(errorMsg);
+    }
+  };
+
+  const processTranscriptResponse = async (transcript: string, response: any) => {
+    // Show transcribed text in conversation
+    if (transcript && transcript.trim()) {
+      setConversation(prev => [...prev, { role: 'user' as const, text: transcript }]);
+      setUserInput(''); // Clear text input
+    }
+
+    // Update collected data
+    setSessionState(prev => ({
+      ...prev,
+      conversationStep: prev.conversationStep + 1,
+      collectedData: {
+        steps: response.extractedData.steps || prev.collectedData.steps,
+        mood: response.extractedData.mood || prev.collectedData.mood,
+        interests: [
+          ...prev.collectedData.interests,
+          ...(response.extractedData.interests || []),
+        ],
+      },
+      friendMatch: response.friendMatch,
+    }));
+
+    // Speak and show next prompt (AI response - use system TTS only)
+    setCurrentPrompt(response.nextPrompt);
+    setConversation(prev => [...prev, { role: 'system', text: response.nextPrompt }]);
+    await speakText(response.nextPrompt);
+
+    // If we have a friend match, show it
+    if (response.friendMatch) {
+      setTimeout(() => {
+        onFriendMatchFound(response.friendMatch!);
+      }, 2000);
+    }
+  };
+
 
   return (
     <View style={styles.container}>

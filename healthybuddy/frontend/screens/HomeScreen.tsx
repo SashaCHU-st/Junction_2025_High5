@@ -1,17 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { voiceService } from '../services/voiceService';
 import { api } from '../services/api';
 
 interface HomeScreenProps {
   onStartVoiceGreeting: () => void;
+  onEventMatching?: () => void;
+  onOpenCalendar?: () => void;
 }
 
-export default function HomeScreen({ onStartVoiceGreeting }: HomeScreenProps) {
+export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOpenCalendar }: HomeScreenProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     checkBackendConnection();
+    
+    // Cleanup: stop TTS when leaving HomeScreen
+    return () => {
+      voiceService.stopSpeaking().catch(() => {});
+    };
   }, []);
 
   const checkBackendConnection = async () => {
@@ -34,13 +42,47 @@ export default function HomeScreen({ onStartVoiceGreeting }: HomeScreenProps) {
         </Text>
 
         <TouchableOpacity
+          style={[styles.eventButton, !isConnected && styles.buttonDisabled]}
+          onPress={async () => {
+            // Stop any ongoing TTS before navigating
+            await voiceService.stopSpeaking();
+            if (onEventMatching) {
+              onEventMatching();
+            } else {
+              console.log('Event Matching pressed');
+            }
+          }}
+          disabled={!isConnected}
+        >
+          <Text style={styles.eventButtonText}>Event Matching</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.button, !isConnected && styles.buttonDisabled]}
-          onPress={onStartVoiceGreeting}
+          onPress={async () => {
+            await voiceService.stopSpeaking();
+            onStartVoiceGreeting();
+          }}
           disabled={!isConnected}
         >
           <Text style={styles.buttonText}>
             Start Today's Voice Greeting
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.calendarButton}
+          onPress={async () => {
+            // Stop any ongoing TTS before navigating
+            await voiceService.stopSpeaking();
+            if (onOpenCalendar) {
+              onOpenCalendar();
+            } else {
+              console.log('Open Calendar');
+            }
+          }}
+        >
+          <Text style={styles.calendarButtonText}>My Calendar</Text>
         </TouchableOpacity>
 
         {isChecking ? (
@@ -120,6 +162,34 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  eventButton: {
+    backgroundColor: '#10B981',
+    paddingVertical: 18,
+    paddingHorizontal: 40,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  eventButtonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  calendarButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#2563EB',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 16,
+    marginTop: 16,
+  },
+  calendarButtonText: {
+    color: '#2563EB',
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
   },
