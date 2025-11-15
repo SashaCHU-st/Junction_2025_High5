@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { voiceService } from '../services/voiceService';
 
 interface EventMatchingScreenProps {
   onChoose: (choice: string) => void;
@@ -7,6 +8,10 @@ interface EventMatchingScreenProps {
 }
 
 export default function EventMatchingScreen({ onChoose, onGoBack }: EventMatchingScreenProps) {
+  useEffect(() => {
+    const prompt = 'What would you like to do today? You can choose Physical Activities or Mental Activities.';
+    voiceService.speak(prompt).catch(() => {});
+  }, []);
   return (
     <View style={styles.container}>
       <View style={styles.header}>

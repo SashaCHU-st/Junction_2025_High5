@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { voiceService } from '../services/voiceService';
 import { api } from '../services/api';
 
 interface HomeScreenProps {
@@ -14,6 +15,10 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
 
   useEffect(() => {
     checkBackendConnection();
+  }, []);
+
+  useEffect(() => {
+    voiceService.speak('Welcome to HealthyBuddy. Tap Event Matching to find activities or My Calendar to see your sign ups.').catch(() => {});
   }, []);
 
   const checkBackendConnection = async () => {

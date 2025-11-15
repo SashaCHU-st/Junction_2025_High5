@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { voiceService } from '../services/voiceService';
 
 interface ActivityDetailScreenProps {
   activityType: 'physical' | 'mental';
@@ -9,6 +10,15 @@ interface ActivityDetailScreenProps {
 }
 
 export default function ActivityDetailScreen({ activityType, activitySub, onChoose, onGoBack }: ActivityDetailScreenProps) {
+  // Speak the detail prompt and available options when the screen opens
+  useEffect(() => {
+    if (activityType === 'physical') {
+      voiceService.speak('What exactly would you like to do? You can choose walk or sport.').catch(() => {});
+    } else {
+      voiceService.speak('What exactly would you like to do? You can choose guided relaxation, puzzles, or learning.').catch(() => {});
+    }
+  }, [activityType]);
+
   // For physical activity subtypes, ask what exactly they'd like to do
   const renderPhysicalOptions = () => (
     <>

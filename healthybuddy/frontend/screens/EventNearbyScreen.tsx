@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { voiceService } from '../services/voiceService';
 
 interface EventNearbyScreenProps {
   forActivity: string; // e.g., 'walk', 'sport_equipment'
@@ -15,6 +16,11 @@ const sampleEvents = (activity: string) => [
 
 export default function EventNearbyScreen({ forActivity, onChoose, onGoBack }: EventNearbyScreenProps) {
   const events = sampleEvents(forActivity);
+
+  useEffect(() => {
+    const intro = `Here are some events near you for ${forActivity}. The top result is ${events[0]?.title || 'no events'}.`;
+    voiceService.speak(intro).catch(() => {});
+  }, [forActivity]);
 
   return (
     <View style={styles.container}>

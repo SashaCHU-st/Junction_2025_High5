@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { voiceService } from '../services/voiceService';
 
 interface JoinedEvent {
   id: string;
@@ -66,6 +67,14 @@ export default function TodayCalendarScreen({ events, onGoBack }: Props) {
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const eventsForSelected = eventsByDate[selectedDate] ?? [];
+
+  useEffect(() => {
+    // Speak summary for the selected date
+    const summary = eventsForSelected.length === 0
+      ? `No sign ups for ${new Date(selectedDate).toLocaleDateString()}.`
+      : `You have ${eventsForSelected.length} sign up${eventsForSelected.length > 1 ? 's' : ''} on ${new Date(selectedDate).toLocaleDateString()}. The first is ${eventsForSelected[0].title}.`;
+    voiceService.speak(summary).catch(() => {});
+  }, [selectedDate]);
 
   return (
     <View style={styles.container}>

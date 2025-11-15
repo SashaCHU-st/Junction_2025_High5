@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { voiceService } from '../services/voiceService';
 
 interface ActivityOptionsScreenProps {
   activityType: 'physical' | 'mental';
@@ -8,7 +9,15 @@ interface ActivityOptionsScreenProps {
 }
 
 export default function ActivityOptionsScreen({ activityType, onChoose, onGoBack }: ActivityOptionsScreenProps) {
-  // For physical activities, ask about older people specifically; for mental, ask a simpler follow-up
+  // Speak prompt depending on activity type
+  useEffect(() => {
+    if (activityType === 'physical') {
+      // This app targets older people, so suggest options accordingly
+      voiceService.speak('Would you like activities suitable for older people, or activities for all ages? Say older people or all ages.').catch(() => {});
+    } else {
+      voiceService.speak('Which type of mental activities do you prefer? Relaxation, cognitive puzzles, or learning?').catch(() => {});
+    }
+  }, [activityType]);
   return (
     <View style={styles.container}>
       <View style={styles.header}>
