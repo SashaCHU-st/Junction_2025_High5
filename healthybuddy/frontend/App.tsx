@@ -9,9 +9,10 @@ import ActivityOptionsScreen from './screens/ActivityOptionsScreen';
 import ActivityDetailScreen from './screens/ActivityDetailScreen';
 import EventNearbyScreen from './screens/EventNearbyScreen';
 import TodayCalendarScreen from './screens/TodayCalendarScreen';
+import OfferJoinScreen from './screens/OfferJoinScreen';
 import { FriendMatch } from './types';
 
-type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions' | 'activityDetail' | 'eventNearby' | 'joinedEvents';
+type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityOptions' | 'activityDetail' | 'eventNearby' | 'joinedEvents' | 'offerJoin';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -19,6 +20,7 @@ export default function App() {
   const [selectedActivityType, setSelectedActivityType] = useState<'physical' | 'mental' | null>(null);
   const [selectedActivitySub, setSelectedActivitySub] = useState<string | null>(null);
   const [nearbyFor, setNearbyFor] = useState<string | null>(null);
+  const [pendingOffer, setPendingOffer] = useState<{id: string; title: string; organizer: string; activity?: string} | null>(null);
   const [joinedEvents, setJoinedEvents] = useState<Array<{id: string; title: string; activity?: string; joinedAt: string;}>>([]);
 
   const handleStartVoiceGreeting = () => {
@@ -144,7 +146,17 @@ export default function App() {
         <EventNearbyScreen
           forActivity={nearbyFor}
           onChoose={(action: string) => {
-            // Expecting format: 'join:<id>:<title>'
+            // Expecting format: 'offer:<id>:<title>:<organizer>' or 'join:' legacy
+            if (action.startsWith('offer:')) {
+              const parts = action.split(':');
+              const id = parts[1] ?? String(Date.now());
+              const title = parts[2] ?? `Event ${id}`;
+              const organizer = parts[3] ?? 'Someone';
+              setPendingOffer({ id, title, organizer, activity: nearbyFor });
+              setCurrentScreen('offerJoin');
+              return;
+            }
+
             if (action.startsWith('join:')) {
               const parts = action.split(':');
               const id = parts[1] ?? String(Date.now());
@@ -159,6 +171,25 @@ export default function App() {
             setCurrentScreen('home');
           }}
           onGoBack={handleGoBack}
+        />
+      )}
+
+      {currentScreen === 'offerJoin' && pendingOffer && (
+        <OfferJoinScreen
+          id={pendingOffer.id}
+          title={pendingOffer.title}
+          organizer={pendingOffer.organizer}
+          activity={pendingOffer.activity}
+          onConfirm={() => {
+            const joinedAt = new Date().toISOString();
+            setJoinedEvents((prev) => [{ id: pendingOffer.id, title: pendingOffer.title, activity: pendingOffer.activity, joinedAt }, ...prev]);
+            setPendingOffer(null);
+            setCurrentScreen('joinedEvents');
+          }}
+          onDecline={() => {
+            setPendingOffer(null);
+            setCurrentScreen('eventNearby');
+          }}
         />
       )}
 

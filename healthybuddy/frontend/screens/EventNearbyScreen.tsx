@@ -9,9 +9,9 @@ interface EventNearbyScreenProps {
 }
 
 const sampleEvents = (activity: string) => [
-  { id: '1', title: `Local ${activity} meetup`, distance: '0.5 km' },
-  { id: '2', title: `${activity} Park Group`, distance: '1.2 km' },
-  { id: '3', title: `Community ${activity} Session`, distance: '2.1 km' },
+  { id: '1', title: `Local ${activity} meetup`, distance: '0.5 km', organizer: 'Juha-Pekka' },
+  { id: '2', title: `${activity} Park Group`, distance: '1.2 km', organizer: 'Liisa' },
+  { id: '3', title: `Community ${activity} Session`, distance: '2.1 km', organizer: 'Community Center' },
 ];
 
 export default function EventNearbyScreen({ forActivity, onChoose, onGoBack }: EventNearbyScreenProps) {
@@ -42,7 +42,7 @@ export default function EventNearbyScreen({ forActivity, onChoose, onGoBack }: E
             <Text style={styles.eventDistance}>{item.distance}</Text>
             <TouchableOpacity
               style={styles.joinButton}
-              onPress={() => onChoose(`join:${item.id}:${item.title}`)}
+              onPress={() => onChoose(`offer:${item.id}:${item.title}:${item.organizer}`)}
             >
               <Text style={styles.joinText}>View / Join</Text>
             </TouchableOpacity>
