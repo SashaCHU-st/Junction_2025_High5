@@ -14,8 +14,15 @@ interface Props {
 export default function OfferJoinScreen({ id, title, organizer, activity, onConfirm, onDecline }: Props) {
   useEffect(() => {
     const prompt = `${organizer} is planning to ${activity || 'this activity'} now. Would you like to join ${title}? Say yes to join or no to decline.`;
-    voiceService.speak(prompt).catch(() => {});
-  }, []);
+    voiceService.speak(prompt).catch((error) => {
+      console.error('Error speaking prompt:', error);
+    });
+
+    // Cleanup: stop TTS when leaving screen
+    return () => {
+      voiceService.stopSpeaking().catch(() => {});
+    };
+  }, [organizer, activity, title]);
 
   return (
     <View style={styles.container}>

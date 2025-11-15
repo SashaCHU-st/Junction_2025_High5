@@ -10,13 +10,27 @@ interface ActivityDetailScreenProps {
 }
 
 export default function ActivityDetailScreen({ activityType, activitySub, onChoose, onGoBack }: ActivityDetailScreenProps) {
-  // Speak the detail prompt and available options when the screen opens
   useEffect(() => {
-    if (activityType === 'physical') {
-      voiceService.speak('What exactly would you like to do? You can choose walk or sport.').catch(() => {});
-    } else {
-      voiceService.speak('What exactly would you like to do? You can choose guided relaxation, puzzles, or learning.').catch(() => {});
-    }
+    // Stop any previous TTS first, then start new one
+    const startSpeaking = async () => {
+      await voiceService.stopSpeaking();
+      if (activityType === 'physical') {
+        await voiceService.speak('What exactly would you like to do? You can choose walk or sport.').catch((error) => {
+          console.error('Error speaking prompt:', error);
+        });
+      } else {
+        await voiceService.speak('What exactly would you like to do? You can choose guided relaxation, puzzles, or learning.').catch((error) => {
+          console.error('Error speaking prompt:', error);
+        });
+      }
+    };
+
+    startSpeaking();
+
+    // Cleanup: stop TTS when leaving screen
+    return () => {
+      voiceService.stopSpeaking().catch(() => {});
+    };
   }, [activityType]);
 
   // For physical activity subtypes, ask what exactly they'd like to do

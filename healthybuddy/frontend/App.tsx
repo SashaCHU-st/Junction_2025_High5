@@ -54,15 +54,24 @@ export default function App() {
     };
   }, []);
 
-  const handleStartVoiceGreeting = () => {
+  const handleStartVoiceGreeting = async () => {
+    // Stop any TTS from HomeScreen before navigating
+    const { voiceService } = await import('./services/voiceService');
+    await voiceService.stopSpeaking();
     setCurrentScreen('voiceChat');
   };
 
-  const handleOpenEventMatching = () => {
+  const handleOpenEventMatching = async () => {
+    // Stop any TTS from HomeScreen before navigating
+    const { voiceService } = await import('./services/voiceService');
+    await voiceService.stopSpeaking();
     setCurrentScreen('eventMatching');
   };
 
-  const handleOpenCalendar = () => {
+  const handleOpenCalendar = async () => {
+    // Stop any TTS from HomeScreen before navigating
+    const { voiceService } = await import('./services/voiceService');
+    await voiceService.stopSpeaking();
     setCurrentScreen('joinedEvents');
   };
 

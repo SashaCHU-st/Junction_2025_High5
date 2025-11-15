@@ -15,17 +15,20 @@ export default function FriendMatchScreen({
   onGoBack,
 }: FriendMatchScreenProps) {
   useEffect(() => {
-    announceMatch();
-  }, []);
-
-  const announceMatch = async () => {
     const announcement = `I found a great match for you! ${friendMatch.candidateName}, age ${friendMatch.candidateAge}.
-    You both share interests in ${friendMatch.commonInterests.join(', ')}.
-    ${friendMatch.reason}.
-    Your match score is ${friendMatch.matchScore} out of 100!`;
+You both share interests in ${friendMatch.commonInterests.join(', ')}.
+${friendMatch.reason}.
+Your match score is ${friendMatch.matchScore} out of 100!`;
 
-    await voiceService.speak(announcement);
-  };
+    voiceService.speak(announcement).catch((error) => {
+      console.error('Error speaking announcement:', error);
+    });
+
+    // Cleanup: stop TTS when leaving screen
+    return () => {
+      voiceService.stopSpeaking().catch(() => {});
+    };
+  }, [friendMatch]);
 
   return (
     <View style={styles.container}>

@@ -9,9 +9,23 @@ interface EventMatchingScreenProps {
 
 export default function EventMatchingScreen({ onChoose, onGoBack }: EventMatchingScreenProps) {
   useEffect(() => {
-    const prompt = 'What would you like to do today? You can choose Physical Activities or Mental Activities.';
-    voiceService.speak(prompt).catch(() => {});
+    // Stop any previous TTS first, then start new one
+    const startSpeaking = async () => {
+      await voiceService.stopSpeaking();
+      const prompt = 'What would you like to do today? You can choose Physical Activities or Mental Activities.';
+      await voiceService.speak(prompt).catch((error) => {
+        console.error('Error speaking prompt:', error);
+      });
+    };
+
+    startSpeaking();
+
+    // Cleanup: stop TTS when leaving screen
+    return () => {
+      voiceService.stopSpeaking().catch(() => {});
+    };
   }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>

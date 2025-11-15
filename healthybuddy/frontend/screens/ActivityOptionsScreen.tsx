@@ -9,15 +9,23 @@ interface ActivityOptionsScreenProps {
 }
 
 export default function ActivityOptionsScreen({ activityType, onChoose, onGoBack }: ActivityOptionsScreenProps) {
-  // Speak prompt depending on activity type
   useEffect(() => {
     if (activityType === 'physical') {
-      // This app targets older people, so suggest options accordingly
-      voiceService.speak('Would you like activities suitable for older people, or activities for all ages? Say older people or all ages.').catch(() => {});
+      voiceService.speak('Would you like activities suitable for older people, or activities for all ages? Say older people or all ages.').catch((error) => {
+        console.error('Error speaking prompt:', error);
+      });
     } else {
-      voiceService.speak('Which type of mental activities do you prefer? Relaxation, cognitive puzzles, or learning?').catch(() => {});
+      voiceService.speak('Which type of mental activities do you prefer? Relaxation, cognitive puzzles, or learning?').catch((error) => {
+        console.error('Error speaking prompt:', error);
+      });
     }
+
+    // Cleanup: stop TTS when leaving screen
+    return () => {
+      voiceService.stopSpeaking().catch(() => {});
+    };
   }, [activityType]);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { voiceService } from '../services/voiceService';
 import { api } from '../services/api';
 
@@ -15,10 +15,11 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
 
   useEffect(() => {
     checkBackendConnection();
-  }, []);
-
-  useEffect(() => {
-    voiceService.speak('Welcome to HealthyBuddy. Tap Event Matching to find activities or My Calendar to see your sign ups.').catch(() => {});
+    
+    // Cleanup: stop TTS when leaving HomeScreen
+    return () => {
+      voiceService.stopSpeaking().catch(() => {});
+    };
   }, []);
 
   const checkBackendConnection = async () => {
@@ -42,7 +43,15 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
 
         <TouchableOpacity
           style={[styles.eventButton, !isConnected && styles.buttonDisabled]}
-          onPress={() => (onEventMatching ? onEventMatching() : console.log('Event Matching pressed'))}
+          onPress={async () => {
+            // Stop any ongoing TTS before navigating
+            await voiceService.stopSpeaking();
+            if (onEventMatching) {
+              onEventMatching();
+            } else {
+              console.log('Event Matching pressed');
+            }
+          }}
           disabled={!isConnected}
         >
           <Text style={styles.eventButtonText}>Event Matching</Text>
@@ -50,7 +59,10 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
 
         <TouchableOpacity
           style={[styles.button, !isConnected && styles.buttonDisabled]}
-          onPress={onStartVoiceGreeting}
+          onPress={async () => {
+            await voiceService.stopSpeaking();
+            onStartVoiceGreeting();
+          }}
           disabled={!isConnected}
         >
           <Text style={styles.buttonText}>
@@ -60,7 +72,15 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
 
         <TouchableOpacity
           style={styles.calendarButton}
-          onPress={() => (onOpenCalendar ? onOpenCalendar() : console.log('Open Calendar'))}
+          onPress={async () => {
+            // Stop any ongoing TTS before navigating
+            await voiceService.stopSpeaking();
+            if (onOpenCalendar) {
+              onOpenCalendar();
+            } else {
+              console.log('Open Calendar');
+            }
+          }}
         >
           <Text style={styles.calendarButtonText}>My Calendar</Text>
         </TouchableOpacity>

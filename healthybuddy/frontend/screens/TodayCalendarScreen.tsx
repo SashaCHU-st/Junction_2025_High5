@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Platform } from 'react-native';
 import { voiceService } from '../services/voiceService';
 
 interface JoinedEvent {
@@ -48,6 +48,7 @@ function monthMatrix(year: number, month: number) {
 export default function TodayCalendarScreen({ events, onGoBack }: Props) {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<string>(formatYMD(today));
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const { year, month, weeks, eventsByDate } = useMemo(() => {
     const y = today.getFullYear();
@@ -68,16 +69,27 @@ export default function TodayCalendarScreen({ events, onGoBack }: Props) {
 
   const eventsForSelected = eventsByDate[selectedDate] ?? [];
 
-  useEffect(() => {
-    // Speak summary for the selected date
-    const summary = eventsForSelected.length === 0
-      ? `No sign ups for ${new Date(selectedDate).toLocaleDateString()}.`
-      : `You have ${eventsForSelected.length} sign up${eventsForSelected.length > 1 ? 's' : ''} on ${new Date(selectedDate).toLocaleDateString()}. The first is ${eventsForSelected[0].title}.`;
-    voiceService.speak(summary).catch(() => {});
-  }, [selectedDate]);
+  const handleUserInteraction = () => {
+    if (!hasUserInteracted) {
+      setHasUserInteracted(true);
+      // Speak after 1 second delay when user interacts
+      setTimeout(() => {
+        const summary = eventsForSelected.length === 0
+          ? `No sign ups for ${new Date(selectedDate).toLocaleDateString()}.`
+          : `You have ${eventsForSelected.length} sign up${eventsForSelected.length > 1 ? 's' : ''} on ${new Date(selectedDate).toLocaleDateString()}. The first is ${eventsForSelected[0].title}.`;
+        voiceService.speak(summary).catch((error) => {
+          console.error('Error speaking summary:', error);
+        });
+      }, 1000);
+    }
+  };
 
   return (
-    <View style={styles.container}>
+    <View 
+      style={styles.container}
+      onTouchStart={handleUserInteraction}
+      {...(Platform.OS === 'web' ? { onMouseDown: handleUserInteraction } : {})}
+    >
       <View style={styles.header}>
         <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>

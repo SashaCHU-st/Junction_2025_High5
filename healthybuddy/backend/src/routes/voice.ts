@@ -132,6 +132,22 @@ export async function voiceRoutes(fastify: FastifyInstance) {
         });
       } catch (error: any) {
         console.error('Error generating TTS:', error);
+        
+        // Check if it's a rate limit error (429)
+        const isRateLimit = error?.status === 429 || 
+                           error?.code === 'rate_limit_exceeded' ||
+                           error?.message?.includes('Rate limit') ||
+                           error?.message?.includes('rate_limit');
+        
+        if (isRateLimit) {
+          // Return 429 status code for rate limit errors
+          return reply.code(429).send({ 
+            error: 'Rate limit exceeded. Please try again later.',
+            retryAfter: error?.headers?.['retry-after'] || '20'
+          });
+        }
+        
+        // For other errors, return 500
         return reply.code(500).send({ 
           error: error?.message || 'Failed to generate speech'
         });

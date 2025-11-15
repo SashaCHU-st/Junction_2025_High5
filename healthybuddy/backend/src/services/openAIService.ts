@@ -100,7 +100,23 @@ export async function transcribeAudio(audioBase64: string): Promise<string> {
       message: error?.message,
       status: error?.status,
       statusText: error?.statusText,
+      code: error?.code,
     });
+    
+    // Check if it's a rate limit error
+    const isRateLimit = error?.status === 429 || 
+                       error?.code === 'rate_limit_exceeded' ||
+                       error?.message?.includes('Rate limit') ||
+                       error?.message?.includes('rate_limit');
+    
+    if (isRateLimit) {
+      console.error('⚠️ RATE LIMIT: Whisper API rate limit exceeded');
+      const newError: any = new Error(`Whisper API rate limit exceeded: ${error?.message || 'Unknown error'}`);
+      newError.status = 429;
+      newError.code = 'whisper_rate_limit';
+      throw newError;
+    }
+    
     throw new Error(`Failed to transcribe audio: ${error?.message || 'Unknown error'}`);
   }
 }
@@ -156,6 +172,19 @@ export async function generateResponse(
     return generatedText.trim();
   } catch (error: any) {
     console.error('Error generating response with OpenAI GPT:', error);
+    
+    // Check if it's a rate limit error
+    const isRateLimit = error?.status === 429 || 
+                       error?.code === 'rate_limit_exceeded' ||
+                       error?.message?.includes('Rate limit') ||
+                       error?.message?.includes('rate_limit');
+    
+    if (isRateLimit) {
+      console.error('⚠️ RATE LIMIT: GPT API rate limit exceeded');
+      // Fallback to a simple response if rate limited
+      return "I understand. Could you tell me more about that?";
+    }
+    
     // Fallback to a simple response if API fails
     return "I understand. Could you tell me more about that?";
   }
@@ -222,8 +251,19 @@ JSON:`;
       // Fallback to simple extraction
       return fallbackDataExtraction(transcript);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error extracting data with OpenAI:', error);
+    
+    // Check if it's a rate limit error
+    const isRateLimit = error?.status === 429 || 
+                       error?.code === 'rate_limit_exceeded' ||
+                       error?.message?.includes('Rate limit') ||
+                       error?.message?.includes('rate_limit');
+    
+    if (isRateLimit) {
+      console.error('⚠️ RATE LIMIT: GPT API (extractData) rate limit exceeded');
+    }
+    
     // Fallback to simple extraction
     return fallbackDataExtraction(transcript);
   }
@@ -339,8 +379,18 @@ export async function textToSpeech(text: string): Promise<string> {
       message: error?.message,
       status: error?.status,
       statusText: error?.statusText,
+      code: error?.code,
     });
-    throw new Error(`Failed to generate speech: ${error?.message || 'Unknown error'}`);
+    
+    // Preserve original error information (especially for rate limit errors)
+    // Attach original error properties to the new error
+    const newError: any = new Error(`Failed to generate speech: ${error?.message || 'Unknown error'}`);
+    newError.originalError = error;
+    newError.status = error?.status;
+    newError.code = error?.code;
+    newError.headers = error?.headers;
+    
+    throw newError;
   }
 }
 

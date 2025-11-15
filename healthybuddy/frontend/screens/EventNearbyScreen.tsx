@@ -18,8 +18,21 @@ export default function EventNearbyScreen({ forActivity, onChoose, onGoBack }: E
   const events = sampleEvents(forActivity);
 
   useEffect(() => {
-    const intro = `Here are some events near you for ${forActivity}. The top result is ${events[0]?.title || 'no events'}.`;
-    voiceService.speak(intro).catch(() => {});
+    // Stop any previous TTS first, then start new one
+    const startSpeaking = async () => {
+      await voiceService.stopSpeaking();
+      const intro = `Here are some events near you for ${forActivity}. The top result is ${events[0]?.title || 'no events'}.`;
+      await voiceService.speak(intro).catch((error) => {
+        console.error('Error speaking prompt:', error);
+      });
+    };
+
+    startSpeaking();
+
+    // Cleanup: stop TTS when leaving screen
+    return () => {
+      voiceService.stopSpeaking().catch(() => {});
+    };
   }, [forActivity]);
 
   return (
