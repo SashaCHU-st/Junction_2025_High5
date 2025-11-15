@@ -9,6 +9,7 @@ export interface FriendMatch {
 }
 
 export interface ProcessVoiceResponse {
+  transcript?: string;
   extractedData: {
     steps?: number;
     mood?: string;
