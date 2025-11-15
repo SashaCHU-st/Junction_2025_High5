@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { voiceService } from '../services/voiceService';
 import { matchVoiceOption, VoiceOption } from '../utils/voiceOptionMatcher';
 
@@ -28,13 +28,10 @@ export default function EventMatchingScreen({ onChoose, onGoBack }: EventMatchin
       // Check if cancelled before starting
       if (isCancelledRef.current) return;
       
-      // Stop any ongoing speech recognition from previous screen
       await voiceService.stopSpeechRecognition();
-      // Small delay to ensure recognition is fully stopped
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
       await voiceService.stopSpeaking();
       
-      // Check again after stopping
       if (isCancelledRef.current) return;
       
       const prompt = retry 
@@ -44,11 +41,9 @@ export default function EventMatchingScreen({ onChoose, onGoBack }: EventMatchin
         console.error('Error speaking prompt:', error);
       });
 
-      // Check if cancelled during TTS
       if (isCancelledRef.current) return;
 
-      // Wait 0.5 seconds after TTS ends, then start listening
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Check again before starting recognition
       if (isCancelledRef.current) return;
@@ -67,14 +62,27 @@ export default function EventMatchingScreen({ onChoose, onGoBack }: EventMatchin
       if (transcript) {
         console.log('Voice input:', transcript);
         const matched = matchVoiceOption(transcript, options);
-        if (matched) {
-          if (matched === 'cancel') {
-            onGoBack();
-          } else {
-            onChoose(matched);
-          }
-          return; // Success, exit
+        console.log('Matched option:', matched, 'for transcript:', transcript);
+               if (matched) {
+                 console.log('Calling onChoose with:', matched);
+                 isCancelledRef.current = true;
+                 setIsListening(false);
+                 await voiceService.stopSpeechRecognition();
+                 await new Promise(resolve => setTimeout(resolve, 150));
+                 await voiceService.stopSpeaking();
+                 
+                 if (matched === 'cancel') {
+                   onGoBack();
+                 } else {
+                   onChoose(matched);
+                 }
+                 return; // Success, exit
+               } else {
+          console.log('No match found for transcript:', transcript);
+          console.log('Available options:', options);
         }
+      } else {
+        console.log('No transcript received');
       }
 
       // No valid input received, retry once (only if not cancelled)
@@ -121,7 +129,9 @@ export default function EventMatchingScreen({ onChoose, onGoBack }: EventMatchin
         <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Home</Text>
         </TouchableOpacity>
-        <Text style={styles.headerText}>What would you like to do today?</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerText}>What would you like to do today?</Text>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -154,56 +164,66 @@ export default function EventMatchingScreen({ onChoose, onGoBack }: EventMatchin
   );
 }
 
+const isWeb = Platform.OS === 'web';
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F9FF',
+    ...(isWeb && {
+      maxWidth: 700,
+      alignSelf: 'center',
+      width: '100%',
+    }),
   },
   header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    alignItems: 'center',
+    paddingTop: Platform.OS === 'ios' ? 100 : isWeb ? 16 : 60,
+    paddingHorizontal: isWeb ? 16 : 20,
+    paddingBottom: isWeb ? 20 : 24,
   },
   backButton: {
-    position: 'absolute',
-    left: 16,
-    top: 60,
-    padding: 8,
+    padding: isWeb ? 6 : 8,
+    marginBottom: isWeb ? 12 : 16,
+  },
+  headerContent: {
+    alignItems: 'center',
   },
   backButtonText: {
-    fontSize: 18,
+    fontSize: isWeb ? 16 : 18,
     color: '#2563EB',
     fontWeight: 'bold',
   },
   headerText: {
-    fontSize: 28,
+    fontSize: isWeb ? 24 : 28,
     fontWeight: 'bold',
     color: '#1E293B',
     textAlign: 'center',
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: isWeb ? 20 : 24,
     alignItems: 'center',
   },
   prompt: {
-    fontSize: 20,
+    fontSize: isWeb ? 18 : 20,
     color: '#475569',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: isWeb ? 20 : 24,
   },
   optionButton: {
     backgroundColor: '#2563EB',
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    marginBottom: 16,
-    width: '80%',
+    paddingVertical: isWeb ? 14 : 18,
+    paddingHorizontal: isWeb ? 24 : 32,
+    borderRadius: 12,
+    marginBottom: isWeb ? 12 : 16,
+    width: isWeb ? '70%' : '80%',
+    ...(isWeb && {
+      maxWidth: 500,
+    }),
   },
   optionText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: isWeb ? 16 : 18,
     fontWeight: 'bold',
     textAlign: 'center',
   },
@@ -216,10 +236,10 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   listeningText: {
-    fontSize: 16,
+    fontSize: isWeb ? 14 : 16,
     color: '#10B981',
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: isWeb ? 12 : 16,
     textAlign: 'center',
   },
 });

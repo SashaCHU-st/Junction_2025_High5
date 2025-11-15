@@ -126,10 +126,33 @@ class SystemTTS implements TTSEngine {
           resolve();
           return;
         }
+        
+        if (Platform.OS === 'ios' || Platform.OS === 'android') {
+          try {
+            await Audio.setAudioModeAsync({
+              allowsRecordingIOS: false, // TTS만 사용하므로 false
+              playsInSilentModeIOS: true,
+              staysActiveInBackground: false,
+              shouldDuckAndroid: true,
+              playThroughEarpieceAndroid: false,
+            });
+          } catch (err) {
+            console.warn('Failed to set audio mode before speak:', err);
+          }
+        }
+        let Speech: any;
+        try {
+          const speechModule = await import('expo-speech');
+          // expo-speech can be imported as default or named export
+          Speech = speechModule.default || speechModule;
+        } catch (importError) {
+          console.error('Failed to import expo-speech:', importError);
+          resolve();
+          return;
+        }
 
-        const Speech = await import('expo-speech');
-        if (!Speech?.default?.speak) {
-          console.error('expo-speech not available');
+        if (!Speech || !Speech.speak) {
+          console.error('expo-speech not available - Speech object:', Speech);
           resolve();
           return;
         }
@@ -142,7 +165,7 @@ class SystemTTS implements TTSEngine {
         this.isSpeaking = true;
         this.resolveCallback = resolve;
 
-        Speech.default.speak(text, {
+        Speech.speak(text, {
           language: 'en-US',
           pitch: 1.0,
           rate: 0.85,
@@ -152,7 +175,7 @@ class SystemTTS implements TTSEngine {
             }
             resolve();
           },
-          onError: (error) => {
+          onError: (error: any) => {
             console.error('Expo Speech error:', error);
             this.cleanup();
             resolve();
@@ -180,8 +203,11 @@ class SystemTTS implements TTSEngine {
       }
     } else {
       try {
-        const Speech = await import('expo-speech');
-        Speech.default?.stop();
+        const speechModule = await import('expo-speech');
+        const Speech = speechModule.default || speechModule;
+        if (Speech && Speech.stop) {
+          Speech.stop();
+        }
       } catch (error) {
         console.warn('Error stopping expo-speech:', error);
       }
@@ -240,37 +266,41 @@ class TTSManager {
 }
 
 export class VoiceService {
+  // Constants
+  private readonly RATE_LIMIT_COOLDOWN_MS = 30000;
+  private readonly SILENCE_THRESHOLD_MS = 2000;
+  private readonly SILENCE_CHECK_INTERVAL_MS = 500;
+  private readonly CLEANUP_DELAY_MS = 150;
+
+  // Recording state
   private recording: Audio.Recording | null = null;
   private webRecording: WebRecording | null = null;
   private isRecording = false;
-
-  private sound: Audio.Sound | null = null;
-  private onSpeechActivityCallback: (() => void) | null = null;
-  private onSilenceDetectedCallback: (() => void) | null = null;
-  
-  // Web Speech Recognition
-  private recognition: any = null;
-  private isRecognizing = false;
-  
-  // TTS management
-  private ttsManager = new TTSManager();
-  private currentSpeakPromise: Promise<void> | null = null;
-  private currentSpeakAbortController: AbortController | null = null;
-  
-  // Rate limit handling
-  private rateLimitUntil: number = 0;
-  private readonly RATE_LIMIT_COOLDOWN_MS = 30000;
-  
-  // Silence detection
   private lastSpeechActivityTime: number = 0;
   private recordingStartTime: number = 0;
   private silenceCheckInterval: ReturnType<typeof setInterval> | null = null;
   private silenceThresholdMs: number = 3000;
   private minRecordingDurationMs: number = 1000;
 
-  // Audio playback
+  // Speech recognition state
+  private recognition: any = null;
+  private isRecognizing = false;
+  private currentRecognitionPromise: Promise<string | null> | null = null;
+
+  // TTS state
+  private ttsManager = new TTSManager();
+  private currentSpeakPromise: Promise<void> | null = null;
+  private currentSpeakAbortController: AbortController | null = null;
+  private rateLimitUntil: number = 0;
+
+  // Audio playback state
+  private sound: Audio.Sound | null = null;
   private playAudioResolve: (() => void) | null = null;
   private playAudioCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Callbacks
+  private onSpeechActivityCallback: (() => void) | null = null;
+  private onSilenceDetectedCallback: (() => void) | null = null;
 
   /**
    * Speak text
@@ -512,17 +542,14 @@ export class VoiceService {
   }
 
   async stopSpeaking(): Promise<void> {
-    // Abort current operation
     if (this.currentSpeakAbortController) {
       this.currentSpeakAbortController.abort();
       this.currentSpeakAbortController = null;
     }
 
-    // Stop TTS
     await this.ttsManager.stop();
-
-    // Stop audio playback
     this.cleanupAudio();
+    
     if (this.sound) {
       try {
         if (Platform.OS === 'web' && this.sound instanceof HTMLAudioElement) {
@@ -867,12 +894,27 @@ export class VoiceService {
   /**
    * Start real-time speech recognition (no rate limit, uses device built-in recognition)
    * Returns transcript when recognition ends
-   * @param timeoutMs Maximum time to wait for speech (default: 10 seconds)
    */
   async startSpeechRecognition(timeoutMs: number = 10000): Promise<string | null> {
     if (Platform.OS === 'web') {
       return this.startWebSpeechRecognition(timeoutMs);
     }
+
+    // Set audio mode for mobile before starting recognition
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: false,
+          playThroughEarpieceAndroid: false,
+        });
+      } catch (err) {
+        console.warn('Failed to set audio mode before speech recognition:', err);
+      }
+    }
+
     return this.startMobileSpeechRecognition(timeoutMs);
   }
 
@@ -882,12 +924,22 @@ export class VoiceService {
   async stopSpeechRecognition(): Promise<void> {
     if (Platform.OS === 'web') {
       this.stopRecognition();
-    } else {
+      return;
+    }
+
+    try {
+      await Voice.stop();
+      Voice.removeAllListeners();
+    } catch (error) {
+      console.warn('Error stopping Voice recognition:', error);
       try {
-        await Voice.stop();
-      } catch (error) {
-        console.warn('Error stopping Voice recognition:', error);
+        Voice.removeAllListeners();
+      } catch (e) {
+        console.warn('Error removing listeners:', e);
       }
+    } finally {
+      this.currentRecognitionPromise = null;
+      await new Promise(resolve => setTimeout(resolve, this.CLEANUP_DELAY_MS));
     }
   }
 
@@ -974,10 +1026,26 @@ export class VoiceService {
 
   /**
    * Start Mobile Speech Recognition (iOS/Android)
-   * Waits for speech and returns transcript
    */
   private async startMobileSpeechRecognition(timeoutMs: number = 10000): Promise<string | null> {
-    return new Promise((resolve) => {
+    // Wait for previous recognition to complete
+    if (this.currentRecognitionPromise) {
+      try {
+        await Promise.race([
+          this.currentRecognitionPromise,
+          new Promise(resolve => setTimeout(resolve, 300))
+        ]);
+      } catch (e) {
+        // Ignore errors
+      }
+      this.currentRecognitionPromise = null;
+    }
+
+    return this.createRecognitionPromise(timeoutMs);
+  }
+
+  private createRecognitionPromise(timeoutMs: number): Promise<string | null> {
+    const recognitionPromise = new Promise<string | null>((resolve) => {
       try {
         Voice.isAvailable()
           .then((isAvailable: number) => {
@@ -988,49 +1056,103 @@ export class VoiceService {
             }
 
             let finalTranscript = '';
+            let confirmedTranscript = '';
+            let lastSpeechTime = Date.now();
             let timeoutId: ReturnType<typeof setTimeout> | null = null;
+            let silenceCheckInterval: ReturnType<typeof setInterval> | null = null;
+            let isResolved = false;
+            let hasFinalResult = false;
 
             const cleanup = () => {
               if (timeoutId) {
                 clearTimeout(timeoutId);
                 timeoutId = null;
               }
-              Voice.removeAllListeners();
+              if (silenceCheckInterval) {
+                clearInterval(silenceCheckInterval);
+                silenceCheckInterval = null;
+              }
+            };
+
+            const safeResolve = (value: string | null) => {
+              if (isResolved) return;
+              isResolved = true;
+              cleanup();
+              resolve(value);
+            };
+
+            Voice.onSpeechPartialResults = (e: any) => {
+              const results = e.value || [];
+              if (results.length > 0 && !hasFinalResult) {
+                finalTranscript = results[0];
+                lastSpeechTime = Date.now();
+              }
             };
 
             Voice.onSpeechResults = (e: any) => {
               const results = e.value || [];
               if (results.length > 0) {
-                finalTranscript = results[0];
+                const newTranscript = results[0];
+                confirmedTranscript = newTranscript;
+                finalTranscript = newTranscript;
+                hasFinalResult = true;
+                lastSpeechTime = Date.now();
+                
+                if (!isResolved && newTranscript && newTranscript.trim()) {
+                  safeResolve(newTranscript);
+                }
               }
             };
 
             Voice.onSpeechEnd = () => {
-              cleanup();
-              resolve(finalTranscript || null);
+              const transcriptToUse = confirmedTranscript || finalTranscript;
+              safeResolve(transcriptToUse && transcriptToUse.trim() ? transcriptToUse : null);
             };
 
             Voice.onSpeechError = (e: any) => {
-              console.error('Speech recognition error:', e.error);
-              cleanup();
-              resolve(null);
+              const errorCode = e.error?.code || '';
+              const errorMessage = e.error?.message || '';
+              
+              // Log error details for debugging
+              console.error('Speech recognition error:', { code: errorCode, message: errorMessage });
+              
+              // For "No speech detected" or "recognition_fail", we should resolve with null
+              // This allows the calling code to retry if needed
+              if (errorCode === 'recognition_fail' || errorMessage.includes('No speech detected')) {
+                // This is expected when no speech is detected, resolve with null
+                safeResolve(null);
+              } else {
+                // For other errors, also resolve with null
+                safeResolve(null);
+              }
             };
 
-            // Set timeout
             timeoutId = setTimeout(() => {
-              Voice.stop();
-              cleanup();
-              resolve(finalTranscript || null);
+              const transcriptToUse = confirmedTranscript || finalTranscript;
+              Voice.stop().catch(() => {});
+              if (!isResolved) {
+                safeResolve(transcriptToUse && transcriptToUse.trim() ? transcriptToUse : null);
+              }
             }, timeoutMs);
+
+            silenceCheckInterval = setInterval(() => {
+              const timeSinceLastSpeech = Date.now() - lastSpeechTime;
+              const transcriptToUse = confirmedTranscript || finalTranscript;
+              if (transcriptToUse && transcriptToUse.trim() && timeSinceLastSpeech >= this.SILENCE_THRESHOLD_MS) {
+                Voice.stop().catch(() => {});
+                safeResolve(transcriptToUse);
+              }
+            }, this.SILENCE_CHECK_INTERVAL_MS);
 
             Voice.start('en-US')
               .then(() => {
-                console.log('Voice recognition started');
+                console.log('Voice recognition started successfully');
+                lastSpeechTime = Date.now();
               })
               .catch((error: any) => {
                 console.error('Failed to start voice recognition:', error);
-                cleanup();
-                resolve(null);
+                // If start fails, resolve immediately
+                safeResolve(null);
               });
           })
           .catch((error: any) => {
@@ -1042,6 +1164,15 @@ export class VoiceService {
         resolve(null);
       }
     });
+
+    this.currentRecognitionPromise = recognitionPromise;
+    recognitionPromise.finally(() => {
+      if (this.currentRecognitionPromise === recognitionPromise) {
+        this.currentRecognitionPromise = null;
+      }
+    });
+
+    return recognitionPromise;
   }
 
   /**

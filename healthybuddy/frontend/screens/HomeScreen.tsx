@@ -7,9 +7,10 @@ interface HomeScreenProps {
   onStartVoiceGreeting: () => void;
   onEventMatching?: () => void;
   onOpenCalendar?: () => void;
+  onOpenFriendMatch?: () => void;
 }
 
-export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOpenCalendar }: HomeScreenProps) {
+export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOpenCalendar, onOpenFriendMatch }: HomeScreenProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
@@ -32,7 +33,7 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>HealthyBuddy</Text>
+        <Text style={styles.title}>CareBuddy</Text>
         <Text style={styles.subtitle}>Voice Companion for Wellness</Text>
       </View>
 
@@ -41,66 +42,67 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
           Connect with friends through voice conversations
         </Text>
 
-        <TouchableOpacity
-          style={[styles.eventButton, !isConnected && styles.buttonDisabled]}
-          onPress={async () => {
-            // Stop any ongoing TTS before navigating
-            await voiceService.stopSpeaking();
-            if (onEventMatching) {
-              onEventMatching();
-            } else {
-              console.log('Event Matching pressed');
-            }
-          }}
-          disabled={!isConnected}
-        >
-          <Text style={styles.eventButtonText}>Event Matching</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonGrid}>
+          <TouchableOpacity
+            style={[styles.boxButton, styles.eventBox, !isConnected && styles.buttonDisabled]}
+            onPress={async () => {
+              // Stop any ongoing TTS before navigating
+              await voiceService.stopSpeaking();
+              if (onEventMatching) {
+                onEventMatching();
+              } else {
+                console.log('Event Matching pressed');
+              }
+            }}
+            disabled={!isConnected}
+          >
+            <Text style={[styles.boxButtonText, styles.eventText]}>Event Matching</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, !isConnected && styles.buttonDisabled]}
-          onPress={async () => {
-            await voiceService.stopSpeaking();
-            onStartVoiceGreeting();
-          }}
-          disabled={!isConnected}
-        >
-          <Text style={styles.buttonText}>
-            Start Today's Voice Greeting
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.calendarButton}
-          onPress={async () => {
-            // Stop any ongoing TTS before navigating
-            await voiceService.stopSpeaking();
-            if (onOpenCalendar) {
-              onOpenCalendar();
-            } else {
-              console.log('Open Calendar');
-            }
-          }}
-        >
-          <Text style={styles.calendarButtonText}>My Calendar</Text>
-        </TouchableOpacity>
-
-        {isChecking ? (
-          <Text style={styles.statusText}>Checking connection...</Text>
-        ) : isConnected ? (
-          <Text style={[styles.statusText, styles.statusConnected]}>
-            ✓ Connected to backend
-          </Text>
-        ) : (
-          <View style={styles.statusContainer}>
-            <Text style={[styles.statusText, styles.statusError]}>
-              × Cannot connect to backend
+          <TouchableOpacity
+            style={[styles.boxButton, styles.chatBox, !isConnected && styles.buttonDisabled]}
+            onPress={async () => {
+              await voiceService.stopSpeaking();
+              onStartVoiceGreeting();
+            }}
+            disabled={!isConnected}
+          >
+            <Text style={[styles.boxButtonText, styles.chatText]}>
+              Voice Chat
             </Text>
-            <TouchableOpacity onPress={checkBackendConnection}>
-              <Text style={styles.retryText}>Tap to retry</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.boxButton, styles.friendBox, !isConnected && styles.buttonDisabled]}
+            onPress={async () => {
+              // Stop any ongoing TTS before navigating
+              await voiceService.stopSpeaking();
+              if (onOpenFriendMatch) {
+                onOpenFriendMatch();
+              } else {
+                console.log('Friend Match pressed');
+              }
+            }}
+            disabled={!isConnected}
+          >
+            <Text style={[styles.boxButtonText, styles.friendText]}>Find Friend Match</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.boxButton, styles.calendarBox]}
+            onPress={async () => {
+              // Stop any ongoing TTS before navigating
+              await voiceService.stopSpeaking();
+              if (onOpenCalendar) {
+                onOpenCalendar();
+              } else {
+                console.log('Open Calendar');
+              }
+            }}
+          >
+            <Text style={[styles.boxButtonText, styles.calendarText]}>My Calendar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.footer}>
@@ -112,25 +114,32 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
   );
 }
 
+const isWeb = Platform.OS === 'web';
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F9FF',
-    padding: 24,
+    padding: isWeb ? 20 : 24,
+    ...(isWeb && {
+      maxWidth: 700,
+      alignSelf: 'center',
+      width: '100%',
+    }),
   },
   header: {
-    marginTop: 60,
-    marginBottom: 40,
+    marginTop: Platform.OS === 'ios' ? 100 : isWeb ? 20 : 60,
+    marginBottom: isWeb ? 30 : 40,
     alignItems: 'center',
   },
   title: {
-    fontSize: 48,
+    fontSize: isWeb ? 40 : 48,
     fontWeight: 'bold',
     color: '#2563EB',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: isWeb ? 18 : 20,
     color: '#64748B',
   },
   content: {
@@ -139,59 +148,76 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   description: {
-    fontSize: 24,
+    fontSize: isWeb ? 20 : 24,
     color: '#475569',
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: isWeb ? 30 : 40,
     paddingHorizontal: 20,
   },
-  button: {
-    backgroundColor: '#2563EB',
-    paddingVertical: 32,
-    paddingHorizontal: 48,
-    borderRadius: 20,
-    elevation: 4,
+  buttonGrid: {
+    width: '100%',
+    paddingHorizontal: isWeb ? 0 : 20,
+    flexDirection: 'column',
+    gap: isWeb ? 12 : 16,
+    ...(isWeb && {
+      maxWidth: 600,
+      alignSelf: 'center',
+    }),
+  },
+  boxButton: {
+    width: '100%',
+    paddingVertical: isWeb ? 16 : 20,
+    paddingHorizontal: isWeb ? 20 : 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  buttonDisabled: {
-    backgroundColor: '#94A3B8',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  eventButton: {
+  eventBox: {
     backgroundColor: '#10B981',
-    paddingVertical: 18,
-    paddingHorizontal: 40,
-    borderRadius: 16,
-    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#059669',
   },
-  eventButtonText: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  chatBox: {
+    backgroundColor: '#2563EB',
+    borderWidth: 2,
+    borderColor: '#1D4ED8',
   },
-  calendarButton: {
+  calendarBox: {
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: '#2563EB',
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 16,
-    marginTop: 16,
   },
-  calendarButtonText: {
-    color: '#2563EB',
-    fontSize: 18,
+  friendBox: {
+    backgroundColor: '#8B5CF6',
+    borderWidth: 2,
+    borderColor: '#7C3AED',
+  },
+  buttonDisabled: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#CBD5E1',
+    opacity: 0.6,
+  },
+  boxButtonText: {
+    fontSize: isWeb ? 16 : 18,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  eventText: {
+    color: '#FFFFFF',
+  },
+  chatText: {
+    color: '#FFFFFF',
+  },
+  calendarText: {
+    color: '#2563EB',
+  },
+  friendText: {
+    color: '#FFFFFF',
   },
   statusContainer: {
     marginTop: 20,
@@ -218,7 +244,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 18,
+    fontSize: isWeb ? 16 : 18,
     color: '#94A3B8',
   },
 });

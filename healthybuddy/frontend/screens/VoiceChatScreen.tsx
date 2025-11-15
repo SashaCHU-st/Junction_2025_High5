@@ -346,48 +346,55 @@ export default function VoiceChatScreen({
   );
 }
 
+const isWeb = Platform.OS === 'web';
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F9FF",
+    ...(isWeb && {
+      maxWidth: 700,
+      alignSelf: 'center',
+      width: '100%',
+    }),
   },
   header: {
     backgroundColor: "#2563EB",
-    padding: 20,
-    paddingTop: 60,
+    padding: isWeb ? 16 : 20,
+    paddingTop: Platform.OS === 'ios' ? 100 : isWeb ? 16 : 60,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   backButton: {
-    padding: 8,
+    padding: isWeb ? 6 : 8,
   },
   backButtonText: {
-    fontSize: 20,
+    fontSize: isWeb ? 18 : 20,
     color: "#FFFFFF",
     fontWeight: "bold",
   },
   headerText: {
-    fontSize: 24,
+    fontSize: isWeb ? 20 : 24,
     fontWeight: "bold",
     color: "#FFFFFF",
     flex: 1,
     textAlign: "center",
-    marginRight: 40, // Balance the back button
+    marginRight: isWeb ? 0 : 40,
   },
   statusText: {
-    fontSize: 16,
+    fontSize: isWeb ? 15 : 16,
     color: "#FFFFFF",
   },
   conversationContainer: {
     flex: 1,
-    padding: 16,
+    padding: isWeb ? 16 : 16,
   },
   messageBubble: {
-    maxWidth: "80%",
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
+    maxWidth: isWeb ? "80%" : "80%",
+    padding: isWeb ? 14 : 16,
+    borderRadius: 12,
+    marginBottom: 10,
   },
   systemBubble: {
     backgroundColor: "#E0E7FF",
@@ -398,29 +405,36 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   messageText: {
-    fontSize: 18,
+    fontSize: isWeb ? 15 : 18,
     color: "#1E293B",
+    lineHeight: isWeb ? 22 : 24,
   },
   inputContainer: {
     flexDirection: "row",
-    padding: 16,
+    padding: isWeb ? 16 : 16,
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#E2E8F0",
+    ...(isWeb && {
+      maxWidth: 650,
+      alignSelf: 'center',
+      width: '100%',
+    }),
   },
   input: {
     flex: 1,
     backgroundColor: "#F1F5F9",
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 18,
-    marginRight: 12,
-    maxHeight: 100,
+    borderRadius: 10,
+    padding: isWeb ? 12 : 16,
+    fontSize: isWeb ? 15 : 18,
+    marginRight: 10,
+    maxHeight: 90,
   },
   sendButton: {
     backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingHorizontal: 24,
+    borderRadius: 10,
+    paddingHorizontal: isWeb ? 20 : 24,
+    ...(isWeb && { paddingVertical: 12, minWidth: 80 }),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -429,17 +443,18 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: isWeb ? 15 : 18,
     fontWeight: 'bold',
   },
   recordButton: {
     backgroundColor: '#10B981',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    borderRadius: 10,
+    paddingHorizontal: isWeb ? 16 : 20,
+    paddingVertical: isWeb ? 12 : 16,
+    ...(isWeb && { minWidth: 50 }),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   recordButtonActive: {
     backgroundColor: '#EF4444',
@@ -448,7 +463,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#94A3B8',
   },
   recordButtonText: {
-    fontSize: 24,
+    fontSize: isWeb ? 20 : 24,
   },
   headerStatus: {
     flexDirection: 'row',
@@ -456,12 +471,12 @@ const styles = StyleSheet.create({
   },
   dataPreview: {
     backgroundColor: "#FEF3C7",
-    padding: 12,
-    margin: 16,
+    padding: isWeb ? 8 : 12,
+    margin: isWeb ? 12 : 16,
     borderRadius: 8,
   },
   dataPreviewText: {
-    fontSize: 14,
+    fontSize: isWeb ? 12 : 14,
     color: "#92400E",
   },
 });
