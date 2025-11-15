@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, Platform, Linking } from 'react-native';
 import * as LinkingExpo from 'expo-linking';
+import SplashScreen from './screens/SplashScreen';
 import HomeScreen from './screens/HomeScreen';
 import VoiceChatScreen from './screens/VoiceChatScreen';
 import FriendMatchScreen from './screens/FriendMatchScreen';
@@ -18,6 +19,7 @@ type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activity
 // type Screen = 'home' | 'voiceChat' | 'friendMatch';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [friendMatch, setFriendMatch] = useState<FriendMatch | null>(null);
   const [selectedActivityType, setSelectedActivityType] = useState<'physical' | 'mental' | null>(null);

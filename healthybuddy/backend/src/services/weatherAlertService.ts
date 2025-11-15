@@ -27,9 +27,9 @@ function isWithinAlertHours(): boolean {
  */
 export async function checkWeatherAlert(): Promise<WeatherAlert | null> {
   // Only check during 10-16
-  if (!isWithinAlertHours()) {
-    return null;
-  }
+  // if (!isWithinAlertHours()) {
+  //   return null;
+  // }
 
   // Check if we can send alert (max 2 per day)
   if (!canSendAlert()) {

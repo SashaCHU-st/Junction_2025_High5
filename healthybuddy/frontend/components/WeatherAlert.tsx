@@ -89,9 +89,9 @@ export default function WeatherAlertComponent() {
     const hour = now.getHours();
 
     // Only check during 10-16
-    if (hour < 10 || hour >= 16) {
-      return;
-    }
+    // if (hour < 10 || hour >= 16) {
+    //   return;
+    // }
 
     try {
       const weatherAlert = await api.getWeatherAlert();
@@ -128,7 +128,8 @@ export default function WeatherAlertComponent() {
       const hour = now.getHours();
 
       // Only poll during 10-16
-      if (hour >= 10 && hour < 16) {
+      // if (hour >= 10 && hour < 16) {
+      if (true) {
         // Wait 2 minutes before first check to allow user interaction for audio
         const INITIAL_DELAY = 2 * 60 * 1000; // 2 minutes in milliseconds
 
@@ -140,7 +141,8 @@ export default function WeatherAlertComponent() {
           intervalRef.current = setInterval(() => {
             const currentHour = new Date().getHours();
             // Only check if still within 10-16
-            if (currentHour >= 10 && currentHour < 16) {
+            // 
+            if (true) {
               checkWeatherAlert();
             } else {
               // Clear interval if outside hours
@@ -151,7 +153,7 @@ export default function WeatherAlertComponent() {
                 intervalRef.current = null;
               }
             }
-          }, 15 * 60 * 1000); // 15 minutes
+          }, 5 * 60 * 1000); // 15 minutes
         }, INITIAL_DELAY);
       } else {
         // If outside hours, check again when we enter the window
