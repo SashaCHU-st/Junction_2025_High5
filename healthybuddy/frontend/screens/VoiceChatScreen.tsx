@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -18,7 +18,10 @@ interface VoiceChatScreenProps {
   onGoBack: () => void;
 }
 
-export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceChatScreenProps) {
+export default function VoiceChatScreen({
+  onFriendMatchFound,
+  onGoBack,
+}: VoiceChatScreenProps) {
   const [sessionState, setSessionState] = useState<VoiceSessionState>({
     conversationStep: 0,
     userId: `user_${Date.now()}`,
@@ -26,9 +29,11 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
       interests: [],
     },
   });
-  const [currentPrompt, setCurrentPrompt] = useState('');
-  const [userInput, setUserInput] = useState('');
-  const [conversation, setConversation] = useState<Array<{ role: 'system' | 'user'; text: string }>>([]);
+  const [currentPrompt, setCurrentPrompt] = useState("");
+  const [userInput, setUserInput] = useState("");
+  const [conversation, setConversation] = useState<
+    Array<{ role: "system" | "user"; text: string }>
+  >([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -45,7 +50,8 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
   // Auto-listen removed - user must click button to record
 
   const startConversation = async () => {
-    const greeting = "Good morning! How are you doing today? Please tell me about your day and any activities you've done.";
+    const greeting =
+      "Good morning! How are you doing today? Please tell me about your day and any activities you've done.";
     setCurrentPrompt(greeting);
     setConversation([{ role: 'system', text: greeting }]);
     await speakText(greeting); // Use system TTS only
@@ -77,8 +83,8 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
     if (!userInput.trim() || isProcessing) return;
 
     const userText = userInput.trim();
-    setConversation(prev => [...prev, { role: 'user', text: userText }]);
-    setUserInput('');
+    setConversation((prev) => [...prev, { role: "user", text: userText }]);
+    setUserInput("");
     setIsProcessing(true);
 
     try {
@@ -90,7 +96,7 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
       );
 
       // Update collected data
-      setSessionState(prev => ({
+      setSessionState((prev) => ({
         ...prev,
         conversationStep: prev.conversationStep + 1,
         collectedData: {
@@ -106,7 +112,10 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
 
       // Speak and show next prompt (AI response - use system TTS only)
       setCurrentPrompt(response.nextPrompt);
-      setConversation(prev => [...prev, { role: 'system', text: response.nextPrompt }]);
+      setConversation((prev) => [
+        ...prev,
+        { role: "system", text: response.nextPrompt },
+      ]);
       await speakText(response.nextPrompt);
 
       // If we have a friend match, show it
@@ -280,7 +289,9 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
             key={index}
             style={[
               styles.messageBubble,
-              message.role === 'system' ? styles.systemBubble : styles.userBubble,
+              message.role === "system"
+                ? styles.systemBubble
+                : styles.userBubble,
             ]}
           >
             <Text style={styles.messageText}>{message.text}</Text>
@@ -327,7 +338,7 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
       {sessionState.collectedData.interests.length > 0 && (
         <View style={styles.dataPreview}>
           <Text style={styles.dataPreviewText}>
-            Interests: {sessionState.collectedData.interests.join(', ')}
+            Interests: {sessionState.collectedData.interests.join(", ")}
           </Text>
         </View>
       )}
@@ -338,68 +349,68 @@ export default function VoiceChatScreen({ onFriendMatchFound, onGoBack }: VoiceC
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F9FF',
+    backgroundColor: "#F5F9FF",
   },
   header: {
-    backgroundColor: '#2563EB',
+    backgroundColor: "#2563EB",
     padding: 20,
     paddingTop: 60,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   backButton: {
     padding: 8,
   },
   backButtonText: {
     fontSize: 20,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontWeight: "bold",
   },
   headerText: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
     marginRight: 40, // Balance the back button
   },
   statusText: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   conversationContainer: {
     flex: 1,
     padding: 16,
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: "80%",
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
   },
   systemBubble: {
-    backgroundColor: '#E0E7FF',
-    alignSelf: 'flex-start',
+    backgroundColor: "#E0E7FF",
+    alignSelf: "flex-start",
   },
   userBubble: {
-    backgroundColor: '#2563EB',
-    alignSelf: 'flex-end',
+    backgroundColor: "#2563EB",
+    alignSelf: "flex-end",
   },
   messageText: {
     fontSize: 18,
-    color: '#1E293B',
+    color: "#1E293B",
   },
   inputContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: "#E2E8F0",
   },
   input: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: "#F1F5F9",
     borderRadius: 12,
     padding: 16,
     fontSize: 18,
@@ -407,7 +418,7 @@ const styles = StyleSheet.create({
     maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: "#2563EB",
     borderRadius: 12,
     paddingHorizontal: 24,
     justifyContent: 'center',
@@ -444,13 +455,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dataPreview: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     padding: 12,
     margin: 16,
     borderRadius: 8,
   },
   dataPreviewText: {
     fontSize: 14,
-    color: '#92400E',
+    color: "#92400E",
   },
 });

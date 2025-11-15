@@ -1,4 +1,4 @@
-import { ProcessVoiceResponse } from '../types';
+import { ProcessVoiceResponse } from "../types";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.34.146:3001';
 
@@ -10,9 +10,9 @@ export const api = {
   ): Promise<ProcessVoiceResponse> {
     try {
       const response = await fetch(`${API_URL}/api/voice/process`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ userId, transcript, conversationStep }),
       });
@@ -23,7 +23,7 @@ export const api = {
 
       return await response.json();
     } catch (error) {
-      console.error('Error calling voice API:', error);
+      console.error("Error calling voice API:", error);
       throw error;
     }
   },
@@ -61,8 +61,50 @@ export const api = {
       const response = await fetch(`${API_URL}/health`);
       return response.ok;
     } catch (error) {
-      console.error('Health check failed:', error);
+      console.error("Health check failed:", error);
       return false;
+    }
+  },
+
+  async getWeatherAlert(): Promise<{
+    show: boolean;
+    emoji?: string;
+    message?: string;
+    temperature?: number;
+  }> {
+    const url = `${API_URL}/api/weather/alert`;
+    console.log(`[API] Fetching weather alert from: ${url}`);
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log(`[API] Weather alert response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[API] Weather alert error response: ${errorText}`);
+        throw new Error(
+          `API error: ${response.status} - ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log(`[API] Weather alert response data:`, data);
+      return data;
+    } catch (error) {
+      console.error(`[API] Error fetching weather alert from ${url}:`, error);
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        console.error(
+          `[API] Network error - Check if backend is running at ${API_URL}`
+        );
+        console.error(`[API] Try: curl ${url} to test the endpoint`);
+      }
+      return { show: false };
     }
   },
 

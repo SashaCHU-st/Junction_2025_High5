@@ -1,16 +1,16 @@
-import 'dotenv/config';
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import { voiceRoutes } from './routes/voice';
+import "dotenv/config";
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import { voiceRoutes } from "./routes/voice";
 
 const fastify = Fastify({
-  logger: true
+  logger: true,
 });
 
 // Register CORS
 fastify.register(cors, {
   origin: true, // Allow all origins for development
-  credentials: true
+  credentials: true,
 });
 
 // Register routes
@@ -19,8 +19,8 @@ fastify.register(voiceRoutes);
 // Start server
 const start = async () => {
   try {
-    const port = parseInt(process.env.PORT || '3001');
-    await fastify.listen({ port, host: '0.0.0.0' });
+    const port = parseInt(process.env.PORT || "3001");
+    await fastify.listen({ port, host: "0.0.0.0" });
     console.log(`
 🎙️  HealthyBuddy Backend Server Running!
 
