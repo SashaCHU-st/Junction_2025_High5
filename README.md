@@ -9,6 +9,7 @@ This repository contains the HealthyBuddy app built for the Junction 2025 projec
 **What this repo contains**
 - `healthybuddy/backend` — Node + TypeScript backend (API routes, services)
 - `healthybuddy/frontend` — React / React-Native-style frontend (TypeScript)
+![2025-11-16091922-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/67ba1699-c0d9-46a8-9682-5b59ef662317)
 
 ## Overview
 
