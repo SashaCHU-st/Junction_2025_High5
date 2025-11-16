@@ -12,12 +12,14 @@ import TodayCalendarScreen from './screens/TodayCalendarScreen';
 import OfferJoinScreen from './screens/OfferJoinScreen';
 import WeatherAlertComponent from './components/WeatherAlert';
 import { FriendMatch } from './types';
+import ScheduleManager from './screens/ScheduleManager';
 
-type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityDetail' | 'eventNearby' | 'joinedEvents' | 'offerJoin';
+type Screen = 'home' | 'voiceChat' | 'friendMatch' | 'eventMatching' | 'activityDetail' | 'eventNearby' | 'joinedEvents' | 'offerJoin' | 'schedule';
 
 // type Screen = 'home' | 'voiceChat' | 'friendMatch';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [friendMatch, setFriendMatch] = useState<FriendMatch | null>(null);
   const [selectedActivityType, setSelectedActivityType] = useState<'physical' | 'mental' | null>(null);
@@ -141,6 +143,14 @@ export default function App() {
     setCurrentScreen('friendMatch');
   };
 
+  const handleOpenSchedule = async () => {
+    // call stopSpeaking but do not await to avoid blocking navigation in some browsers
+    import('./services/voiceService')
+      .then((m) => m.voiceService.stopSpeaking().catch(() => {}))
+      .catch(() => {});
+    setCurrentScreen('schedule');
+  };
+
   const handleGoBack = () => {
     setCurrentScreen('home');
   };
@@ -156,6 +166,7 @@ export default function App() {
           onEventMatching={handleOpenEventMatching}
           onOpenCalendar={handleOpenCalendar}
           onOpenFriendMatch={handleOpenFriendMatch}
+          onOpenSchedule={handleOpenSchedule}
         />
       )}
 
@@ -252,6 +263,10 @@ export default function App() {
           events={joinedEvents}
           onGoBack={handleGoBack}
         />
+      )}
+
+      {currentScreen === 'schedule' && (
+        <ScheduleManager onGoBack={handleGoBack} />
       )}
 
       {currentScreen === 'friendMatch' && friendMatch && (

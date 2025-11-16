@@ -301,6 +301,7 @@ export class VoiceService {
   // Callbacks
   private onSpeechActivityCallback: (() => void) | null = null;
   private onSilenceDetectedCallback: (() => void) | null = null;
+  private onPartialResultCallback: ((text: string) => void) | null = null;
 
   /**
    * Speak text
@@ -582,6 +583,10 @@ export class VoiceService {
 
   setSilenceDetectedCallback(callback: (() => void) | null): void {
     this.onSilenceDetectedCallback = callback;
+  }
+
+  setPartialResultCallback(callback: ((text: string) => void) | null): void {
+    this.onPartialResultCallback = callback;
   }
 
   private startSilenceDetection(): void {
@@ -965,8 +970,9 @@ export class VoiceService {
         const recognition = new SpeechRecognition();
         this.recognition = recognition;
 
-        recognition.continuous = false;
-        recognition.interimResults = false;
+  recognition.continuous = false;
+  // allow interim results so we can stream partial transcripts to the UI
+  recognition.interimResults = true;
         recognition.lang = 'en-US';
 
         let finalTranscript = '';
@@ -984,14 +990,24 @@ export class VoiceService {
         recognition.onresult = (event: any) => {
           for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
+            const isFinal = event.results[i].isFinal;
+            if (isFinal) {
               finalTranscript += transcript + ' ';
+            } else {
+              // send interim/partial transcript to UI
+              try {
+                if (this.onPartialResultCallback) this.onPartialResultCallback(transcript.trim());
+              } catch (e) {
+                // ignore errors from UI callback
+              }
             }
           }
         };
 
         recognition.onend = () => {
           cleanup();
+          // clear partials
+          try { if (this.onPartialResultCallback) this.onPartialResultCallback(''); } catch (e) {}
           if (finalTranscript.trim()) {
             resolve(finalTranscript.trim());
           } else {
@@ -1086,6 +1102,12 @@ export class VoiceService {
               if (results.length > 0 && !hasFinalResult) {
                 finalTranscript = results[0];
                 lastSpeechTime = Date.now();
+                // forward partial transcript to UI if provided
+                try {
+                  if (this.onPartialResultCallback) this.onPartialResultCallback(finalTranscript.trim());
+                } catch (err) {
+                  // ignore UI callback errors
+                }
               }
             };
 

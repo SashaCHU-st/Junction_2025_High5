@@ -8,9 +8,10 @@ interface HomeScreenProps {
   onEventMatching?: () => void;
   onOpenCalendar?: () => void;
   onOpenFriendMatch?: () => void;
+  onOpenSchedule?: () => void;
 }
 
-export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOpenCalendar, onOpenFriendMatch }: HomeScreenProps) {
+export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOpenCalendar, onOpenFriendMatch, onOpenSchedule }: HomeScreenProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
@@ -60,12 +61,11 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.boxButton, styles.chatBox, !isConnected && styles.buttonDisabled]}
+            style={[styles.boxButton, styles.chatBox]}
             onPress={async () => {
               await voiceService.stopSpeaking();
               onStartVoiceGreeting();
             }}
-            disabled={!isConnected}
           >
             <Text style={[styles.boxButtonText, styles.chatText]}>
               Voice Chat
@@ -88,6 +88,21 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
             <Text style={[styles.boxButtonText, styles.friendText]}>Find Friend Match</Text>
           </TouchableOpacity>
 
+            <TouchableOpacity
+            style={[styles.boxButton, styles.setScheduleBox]}
+            onPress={() => {
+              // Don't await stopSpeaking() to avoid blocking navigation if TTS hang occurs in some browsers
+              voiceService.stopSpeaking().catch(() => {});
+              if (onOpenSchedule) {
+                onOpenSchedule();
+              } else {
+                console.log('Open Schedule Manager');
+              }
+            }}
+          >
+            <Text style={[styles.boxButtonText, styles.setScheduleText]}>Set Schedule</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.boxButton, styles.calendarBox]}
             onPress={async () => {
@@ -102,12 +117,14 @@ export default function HomeScreen({ onStartVoiceGreeting, onEventMatching, onOp
           >
             <Text style={[styles.boxButtonText, styles.calendarText]}>My Calendar</Text>
           </TouchableOpacity>
+
+          
         </View>
       </View>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          This app operates entirely by voice
+          {/*This app operates entirely by voice*/}
         </Text>
       </View>
     </View>
@@ -192,6 +209,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#2563EB',
   },
+  setScheduleBox: {
+    backgroundColor: '#b892dfff',
+    borderWidth: 2,
+    borderColor: '#a77cf0ff',
+  },
   friendBox: {
     backgroundColor: '#8B5CF6',
     borderWidth: 2,
@@ -215,6 +237,9 @@ const styles = StyleSheet.create({
   },
   calendarText: {
     color: '#2563EB',
+  },
+  setScheduleText: {
+    color: '#FFFFFF',
   },
   friendText: {
     color: '#FFFFFF',
