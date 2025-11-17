@@ -3,7 +3,7 @@
 This repository contains the HealthyBuddy app built for the Junction 2025 project. The HealthyBuddy app includes a TypeScript/Node backend and a TypeScript React/React-Native-style frontend (see `healthybuddy` folder).
 
 **Quick links**
-- **Project folder:** `healthybuddy`
+- **Project folder:** `CareBuddy`
 - **HealthyBuddy QUICKSTART:** `healthybuddy/QUICKSTART.md`
 
 **What this repo contains**
